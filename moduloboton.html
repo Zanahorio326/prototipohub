@@ -1,1 +1,119 @@
-código 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Módulo Botón</title>
+  <style>
+    * { 
+      box-sizing: border-box; 
+      margin: 0;
+      padding: 0;
+    }
+    html, body, #btnTool {
+      width: 100%;
+      height: 100%;
+    }
+    #btnTool {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      font-family: sans-serif;
+      user-select: none;
+      font-size: 14px;
+      gap: 2px;
+      padding: 5px;
+    }
+    .emoji { font-size: 20px; }
+
+    /* Herramientas de configuración del botón */
+    #btnConfig {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 15px;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      z-index: 10000;
+      display: none;
+    }
+    #btnConfig input, #btnConfig select {
+      margin: 5px 0;
+      width: 200px;
+    }
+  </style>
+</head>
+<body>
+  <div id="btnTool">
+    <span class="emoji">🔘</span>
+    <span>Botón</span>
+  </div>
+
+  <div id="btnConfig">
+    <label>Texto: <input type="text" id="btnText"></label>
+    <label>URL: <input type="text" id="btnUrl"></label>
+    <label>Color: <input type="color" id="btnColor"></label>
+    <label>Forma:
+      <select id="btnShape">
+        <option value="rect">Rectangular</option>
+        <option value="round">Redondeado</option>
+        <option value="circle">Circular</option>
+      </select>
+    </label>
+    <button onclick="applyConfig()">Aplicar</button>
+  </div>
+
+  <script>
+    let currentButton = null;
+
+    // Comunicación con el padre
+    window.addEventListener('click', e => {
+      if(e.target.closest('#btnTool')) {
+        window.parent.postMessage({ 
+          action: 'createButton',
+          x: e.clientX,
+          y: e.clientY
+        }, '*');
+      }
+    });
+
+    // Configuración del botón
+    function configureButton(btn) {
+      currentButton = btn;
+      document.getElementById('btnText').value = btn.textContent;
+      document.getElementById('btnUrl').value = btn.dataset.url || '';
+      document.getElementById('btnColor').value = btn.style.backgroundColor || '#ffffff';
+      document.getElementById('btnConfig').style.display = 'block';
+    }
+
+    function applyConfig() {
+      if(!currentButton) return;
+      
+      currentButton.textContent = document.getElementById('btnText').value;
+      currentButton.dataset.url = document.getElementById('btnUrl').value;
+      currentButton.style.backgroundColor = document.getElementById('btnColor').value;
+      
+      const shape = document.getElementById('btnShape').value;
+      currentButton.style.borderRadius = 
+        shape === 'round' ? '8px' : 
+        shape === 'circle' ? '50%' : '0';
+        
+      document.getElementById('btnConfig').style.display = 'none';
+      window.parent.postMessage({ action: 'saveButton' }, '*');
+    }
+
+    // Receptor de mensajes del padre
+    window.addEventListener('message', e => {
+      if(e.data.action === 'editButton') {
+        configureButton(e.data.button);
+      }
+    });
+  </script>
+</body>
+</html>
