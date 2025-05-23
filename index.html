@@ -2,12 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Editor</title>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
-    /* Barra de herramientas con scrollbar obligatoria y sin scroll táctil */
     .sidebar {
       display: flex;
       overflow-x: auto;
@@ -16,14 +15,26 @@
       padding: 10px;
       border-bottom: 1px solid #ccc;
       touch-action: none;
-      /* Scrollbar más grueso */
       scrollbar-width: thin;
       scrollbar-color: #aaa transparent;
     }
     .sidebar::-webkit-scrollbar { height: 20px; }
     .sidebar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
 
-    .tool { min-width: 80px; padding: 10px; background: white; border: 1px solid #ccc; margin-right: 10px; text-align: center; user-select: none; }
+    .tool, iframe.tool {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 80px;
+      padding: 10px;
+      background: white;
+      border: 1px solid #ccc;
+      margin-right: 10px;
+      text-align: center;
+      user-select: none;
+      cursor: pointer;
+      min-height: 40px;
+    }
     #trash { background: #ffe6e6; border-color: #ff4d4d; }
 
     .canvas { flex: 1; background: #fff; border-top: 2px dashed #ccc; position: relative; overflow: auto; }
@@ -36,6 +47,8 @@
     .text-tools select, .text-tools input[type="color"], .text-tools input[type="checkbox"], .button-tools input, .button-tools select { display: block; margin-bottom: 8px; width: 100%; }
     .button-tools label { font-size: 14px; margin-top: 4px; display: block; }
     .button-tools button { margin-top: 8px; }
+
+    #iframeFondo { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; z-index: 2000; }
   </style>
 </head>
 <body>
@@ -43,7 +56,7 @@
     <div class="tool" data-type="text">📝 Texto</div>
     <div class="tool" data-type="image">🖼️ Imagen</div>
     <div class="tool" data-type="button">🔘 Botón</div>
-    <div class="tool" id="bgColorTool">🧱 Fondo</div>
+    <iframe id="iframeFondo" class="tool" src="https://zanahorio326.github.io/prototipohub/modulofondo.html" title="Fondo"></iframe>
     <div class="tool" id="trash">🗑️ Basurero</div>
   </div>
 
@@ -54,21 +67,8 @@
   <input type="color" id="btnColorPicker" style="display:none" />
 
   <div class="text-tools" id="textTools">
-    <select id="fontSize">
-      <option value="12px">12px</option>
-      <option value="14px">14px</option>
-      <option value="16px" selected>16px</option>
-      <option value="18px">18px</option>
-      <option value="20px">20px</option>
-      <option value="24px">24px</option>
-      <option value="28px">28px</option>
-      <option value="32px">32px</option>
-    </select>
-    <select id="fontFamily">
-      <option value="sans-serif" selected>Sans</option>
-      <option value="serif">Serif</option>
-      <option value="monospace">Monospace</option>
-    </select>
+    <select id="fontSize"><option value="12px">12px</option><option value="14px">14px</option><option value="16px" selected>16px</option><option value="18px">18px</option><option value="20px">20px</option><option value="24px">24px</option><option value="28px">28px</option><option value="32px">32px</option></select>
+    <select id="fontFamily"><option value="sans-serif" selected>Sans</option><option value="serif">Serif</option><option value="monospace">Monospace</option></select>
     <input type="color" id="fontColor" title="Color de texto" />
     <label><input type="checkbox" id="outlineToggle" /> Contorno</label>
     <input type="color" id="outlineColor" title="Color del contorno" disabled />
@@ -78,22 +78,13 @@
     <label>Texto del botón:<input type="text" id="btnTextInput" /></label>
     <label>Enlace URL:<input type="text" id="btnUrlInput" /></label>
     <label>Color de fondo:<input type="color" id="btnBgInput" /></label>
-    <label>Forma:
-      <select id="btnShapeSelect">
-        <option value="rectangular">Rectangular</option>
-        <option value="redondeada">Redondeada</option>
-        <option value="circular">Circular</option>
-        <option value="rombo">Rombo</option>
-      </select>
-    </label>
+    <label>Forma:<select id="btnShapeSelect"><option value="rectangular">Rectangular</option><option value="redondeada">Redondeada</option><option value="circular">Circular</option><option value="rombo">Rombo</option></select></label>
     <button id="btnApply">Aplicar</button>
   </div>
 
   <script>
     const tools = document.querySelectorAll('.tool');
     const canvas = document.getElementById('canvas');
-    const bgColorTool = document.getElementById('bgColorTool');
-    const bgColorPicker = document.getElementById('bgColorPicker');
     const trash = document.getElementById('trash');
     const textTools = document.getElementById('textTools');
     const buttonTools = document.getElementById('buttonTools');
@@ -103,34 +94,33 @@
     const outlineToggle = document.getElementById('outlineToggle');
     const outlineColor = document.getElementById('outlineColor');
     const imgUploadInput = document.getElementById('imgUploadInput');
+    const bgColorPicker = document.getElementById('bgColorPicker');
     const btnTextInput = document.getElementById('btnTextInput');
     const btnUrlInput = document.getElementById('btnUrlInput');
     const btnBgInput = document.getElementById('btnBgInput');
     const btnShapeSelect = document.getElementById('btnShapeSelect');
     const btnApply = document.getElementById('btnApply');
+    const iframeFondo = document.getElementById('iframeFondo');
 
     let currentEditable = null;
     let currentImage = null;
     let currentButton = null;
     let draggedType = null;
 
-    // Herramientas básicas
     tools.forEach(tool => {
-      if (tool.id === 'trash' || tool.id === 'bgColorTool') return;
+      if (tool === iframeFondo || tool.id === 'trash') return;
       tool.addEventListener('touchstart', () => { draggedType = tool.dataset.type; });
       tool.addEventListener('touchend', () => {
-        if (draggedType) {
-          addBlock(draggedType, 30, 30);
-          draggedType = null;
-        }
+        if (draggedType) { addBlock(draggedType, 30, 30); draggedType = null; }
       });
     });
 
-    // Fondo del lienzo
-    bgColorTool.addEventListener('click', () => bgColorPicker.click());
-    bgColorPicker.addEventListener('input', e => canvas.style.background = e.target.value);
+    window.addEventListener('message', e => {
+      if (e.data && e.data.bgColor) {
+        canvas.style.background = e.data.bgColor;
+      }
+    });
 
-    // Subir imagen
     imgUploadInput.addEventListener('change', e => {
       const file = e.target.files[0];
       if (file && currentImage) {
@@ -153,13 +143,11 @@
       imgUploadInput.value = '';
     });
 
-    // Crear bloques
     function addBlock(type, x, y) {
       const el = document.createElement('div');
       el.className = 'block';
       el.style.left = `${x}px`;
       el.style.top = `${y}px`;
-
       if (type === 'text') {
         const h2 = document.createElement('h2');
         h2.textContent = 'Texto editable';
@@ -175,7 +163,6 @@
           e.stopPropagation();
         });
         el.appendChild(h2);
-
       } else if (type === 'image') {
         const img = document.createElement('img');
         img.src = 'https://via.placeholder.com/100';
@@ -186,7 +173,6 @@
           e.stopPropagation();
         });
         el.appendChild(img);
-
       } else if (type === 'button') {
         const btn = document.createElement('button');
         btn.textContent = 'Botón';
@@ -202,19 +188,16 @@
         });
         el.appendChild(btn);
       }
-
       makeMovableWithHold(el);
       canvas.appendChild(el);
     }
 
-    // Herramientas de botón
     function openButtonTools(btn, block) {
       currentButton = btn;
       buttonTools.style.display = 'block';
       const rect = block.getBoundingClientRect();
       buttonTools.style.top = `${rect.top + window.scrollY + block.offsetHeight + 8}px`;
       buttonTools.style.left = `${rect.left}px`;
-
       btnTextInput.value = btn.textContent;
       btnUrlInput.value = btn.dataset.url;
       btnBgInput.value = rgbToHex(getComputedStyle(btn).backgroundColor) || '#ffffff';
@@ -245,7 +228,6 @@
       btn.style.transform = shape === 'rombo' ? 'rotate(45deg)' : 'none';
     }
 
-    // Arrastre con hold
     function makeMovableWithHold(el) {
       let isDragging = false, offsetX, offsetY, holdTimer, startX, startY, lastX, lastY;
       const startHold = e => {
@@ -285,7 +267,6 @@
       document.addEventListener('mouseup', endHold);
     }
 
-    // Herramientas de texto
     function showTextTools(target) {
       const rect = target.getBoundingClientRect();
       textTools.style.display = 'block';
@@ -300,11 +281,13 @@
       outlineColor.disabled = !outlineToggle.checked;
       outlineColor.value = rgbToHex(getComputedStyle(target).WebkitTextStrokeColor) || '#000';
     }
+
     function hideTextTools() {
       if (currentEditable) currentEditable.contentEditable = 'false';
       currentEditable = null;
       textTools.style.display = 'none';
     }
+
     fontSize.addEventListener('change', () => { if (currentEditable) currentEditable.style.fontSize = fontSize.value; });
     fontFamily.addEventListener('change', () => { if (currentEditable) currentEditable.style.fontFamily = fontFamily.value; });
     fontColor.addEventListener('input', () => { if (currentEditable) currentEditable.style.color = fontColor.value; });
@@ -334,4 +317,4 @@
     }
   </script>
 </body>
-  </html>
+</html>
