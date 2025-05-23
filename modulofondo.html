@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configurador de Fondo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
+    .sidebar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      overflow: hidden;
+      background: #f0f0f0;
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+    .tool {
+      min-width: 80px;
+      padding: 10px;
+      background: white;
+      border: 1px solid #ccc;
+      margin-right: 10px;
+      text-align: center;
+      user-select: none;
+      cursor: pointer;
+    }
+    #bgColorTool { background: #e6f7ff; border-color: #91d5ff; }
+    .canvas {
+      flex: 1;
+      background: #ffffff;
+      border-top: 2px dashed #ccc;
+      position: relative;
+      overflow: auto;
+    }
+    /* Input oculto */
+    #bgColorPicker { display: none; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="tool" id="bgColorTool">🧱 Fondo</div>
+  </div>
+  <div class="canvas" id="canvas"></div>
+  <input type="color" id="bgColorPicker" />
+
+  <script>
+    const bgColorTool = document.getElementById('bgColorTool');
+    const bgColorPicker = document.getElementById('bgColorPicker');
+    const canvas = document.getElementById('canvas');
+
+    // Mostrar selector de color al hacer clic
+    bgColorTool.addEventListener('click', () => {
+      bgColorPicker.click();
+    });
+
+    // Cambiar color de fondo del canvas
+    bgColorPicker.addEventListener('input', e => {
+      canvas.style.background = e.target.value;
+    });
+  </script>
+</body>
+</html>
