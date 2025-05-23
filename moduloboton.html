@@ -1,50 +1,94 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Módulo Botón</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    html, body, #buttonTool {
-      width: 100%;
-      height: 100%;
-    }
-    #buttonTool {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: white;
+    /* Estilos del panel de edición de botón */
+    .button-tools {
+      position: absolute;
+      display: none;
+      background: rgba(255,255,255,0.95);
       border: 1px solid #ccc;
-      cursor: pointer;
-      font-family: sans-serif;
-      user-select: none;
-      font-size: 14px;
-      gap: 2px;
-      line-height: 1;
-      padding: 5px;
+      padding: 10px;
+      z-index: 1000;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      border-radius: 4px;
     }
-    .emoji {
-      font-size: 20px;
+    .button-tools label {
+      font-size: 14px;
+      margin-top: 4px;
+      display: block;
+    }
+    .button-tools input,
+    .button-tools select {
+      display: block;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+    .button-tools button {
+      margin-top: 8px;
     }
   </style>
 </head>
 <body>
-  <div id="buttonTool">
-    <span class="emoji">🔘</span>
-    <span>Botón</span>
+  <!-- Panel de configuración del botón -->
+  <div class="button-tools" id="buttonTools">
+    <label>Texto del botón:<input type="text" id="btnTextInput" /></label>
+    <label>Enlace URL:<input type="text" id="btnUrlInput" /></label>
+    <label>Color de fondo:<input type="color" id="btnBgInput" /></label>
+    <label>Forma:
+      <select id="btnShapeSelect">
+        <option value="rectangular">Rectangular</option>
+        <option value="redondeada">Redondeada</option>
+        <option value="circular">Circular</option>
+        <option value="rombo">Rombo</option>
+      </select>
+    </label>
+    <button id="btnApply">Aplicar</button>
   </div>
 
   <script>
-    const btn = document.getElementById('buttonTool');
-    btn.addEventListener('click', () => {
-      // Le indicamos al index que añada un bloque de tipo "button"
-      window.parent.postMessage({ tool: 'button' }, '*');
+    // Referencias a los controles
+    const buttonTools   = document.getElementById('buttonTools');
+    const btnTextInput  = document.getElementById('btnTextInput');
+    const btnUrlInput   = document.getElementById('btnUrlInput');
+    const btnBgInput    = document.getElementById('btnBgInput');
+    const btnShapeSelect= document.getElementById('btnShapeSelect');
+    const btnApply      = document.getElementById('btnApply');
+
+    // Datos del botón que se está editando
+    let currentData = { id: null, text: '', url: '', bg: '#ffffff', shape: 'rectangular' };
+
+    // Escucha mensajes desde la página padre
+    window.addEventListener('message', e => {
+      const data = e.data;
+      if (!data || data.type !== 'openButtonTools') return;
+      // Guardamos el estado actual
+      currentData = { ...data };
+      // Rellenamos los controles con los valores recibidos
+      btnTextInput.value   = data.text;
+      btnUrlInput.value    = data.url;
+      btnBgInput.value     = data.bg;
+      btnShapeSelect.value = data.shape;
+
+      // Mostramos el panel
+      buttonTools.style.display = 'block';
+    });
+
+    // Al aplicar, enviamos los nuevos valores al padre y ocultamos
+    btnApply.addEventListener('click', () => {
+      const response = {
+        type:  'applyButtonTools',
+        id:    currentData.id,
+        text:  btnTextInput.value,
+        url:   btnUrlInput.value,
+        bg:    btnBgInput.value,
+        shape: btnShapeSelect.value
+      };
+      parent.postMessage(response, '*');
+      buttonTools.style.display = 'none';
     });
   </script>
 </body>
