@@ -71,25 +71,21 @@
   <script>
     let currentButtonId = null;
 
-    // Detectar clics en botones del canvas
-    window.parent.document.getElementById('canvas').addEventListener('click', e => {
-      const btn = e.target.closest('button');
-      if (!btn) return;
-      
-      currentButtonId = btn.dataset.id;
-      window.parent.postMessage({ 
-        action: 'getButtonData',
-        buttonId: currentButtonId
-      }, '*');
-    });
-
-    // Recibir datos del botón
+    // Escuchar apertura de configuración desde el padre
     window.addEventListener('message', e => {
-      if (e.data.action === 'sendButtonData') {
+      if (e.data?.action === 'openButtonConfig') {
+        currentButtonId = e.data.buttonId;
+        window.parent.postMessage({ 
+          action: 'getButtonData',
+          buttonId: currentButtonId
+        }, '*');
+      }
+      
+      if (e.data?.action === 'sendButtonData') {
         document.getElementById('btnText').value = e.data.text;
-        document.getElementById('btnUrl').value = e.data.url;
-        document.getElementById('btnColor').value = e.data.color;
-        document.getElementById('btnShape').value = e.data.shape;
+        document.getElementById('btnUrl').value = e.data.url || '';
+        document.getElementById('btnColor').value = e.data.color || '#ffffff';
+        document.getElementById('btnShape').value = e.data.shape || 'rect';
         document.getElementById('btnConfig').style.display = 'block';
       }
     });
