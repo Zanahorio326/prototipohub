@@ -30,7 +30,6 @@
     }
     .emoji { font-size: 20px; }
 
-    /* Herramientas de configuración del botón */
     #btnConfig {
       position: fixed;
       top: 50%;
@@ -70,49 +69,51 @@
   </div>
 
   <script>
-    let currentButton = null;
+    let currentButtonId = null;
 
-    // Comunicación con el padre
-    window.addEventListener('click', e => {
-      if(e.target.closest('#btnTool')) {
-        window.parent.postMessage({ 
-          action: 'createButton',
-          x: e.clientX,
-          y: e.clientY
-        }, '*');
+    // Detectar clics en botones del canvas
+    window.parent.document.getElementById('canvas').addEventListener('click', e => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      
+      currentButtonId = btn.dataset.id;
+      window.parent.postMessage({ 
+        action: 'getButtonData',
+        buttonId: currentButtonId
+      }, '*');
+    });
+
+    // Recibir datos del botón
+    window.addEventListener('message', e => {
+      if (e.data.action === 'sendButtonData') {
+        document.getElementById('btnText').value = e.data.text;
+        document.getElementById('btnUrl').value = e.data.url;
+        document.getElementById('btnColor').value = e.data.color;
+        document.getElementById('btnShape').value = e.data.shape;
+        document.getElementById('btnConfig').style.display = 'block';
       }
     });
 
-    // Configuración del botón
-    function configureButton(btn) {
-      currentButton = btn;
-      document.getElementById('btnText').value = btn.textContent;
-      document.getElementById('btnUrl').value = btn.dataset.url || '';
-      document.getElementById('btnColor').value = btn.style.backgroundColor || '#ffffff';
-      document.getElementById('btnConfig').style.display = 'block';
-    }
-
     function applyConfig() {
-      if(!currentButton) return;
+      window.parent.postMessage({
+        action: 'updateButton',
+        buttonId: currentButtonId,
+        text: document.getElementById('btnText').value,
+        url: document.getElementById('btnUrl').value,
+        color: document.getElementById('btnColor').value,
+        shape: document.getElementById('btnShape').value
+      }, '*');
       
-      currentButton.textContent = document.getElementById('btnText').value;
-      currentButton.dataset.url = document.getElementById('btnUrl').value;
-      currentButton.style.backgroundColor = document.getElementById('btnColor').value;
-      
-      const shape = document.getElementById('btnShape').value;
-      currentButton.style.borderRadius = 
-        shape === 'round' ? '8px' : 
-        shape === 'circle' ? '50%' : '0';
-        
       document.getElementById('btnConfig').style.display = 'none';
-      window.parent.postMessage({ action: 'saveButton' }, '*');
     }
 
-    // Receptor de mensajes del padre
-    window.addEventListener('message', e => {
-      if(e.data.action === 'editButton') {
-        configureButton(e.data.button);
-      }
+    // Crear nuevos botones
+    document.getElementById('btnTool').addEventListener('click', e => {
+      window.parent.postMessage({ 
+        action: 'createButton',
+        x: e.clientX,
+        y: e.clientY
+      }, '*');
     });
   </script>
 </body>
