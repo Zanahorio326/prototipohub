@@ -7,15 +7,16 @@
   <style>
     * { 
       box-sizing: border-box; 
-      margin: 0;  /* Elimina márgenes globales */
-      padding: 0; /* Elimina padding global */
+      margin: 0;
+      padding: 0;
     }
     html, body, #bgButton {
-      width: 100%;  /* Ocupa todo el ancho del iframe */
-      height: 100%; /* Ocupa todo el alto del iframe */
+      width: 100%;
+      height: 100%;
     }
     #bgButton {
       display: flex;
+      flex-direction: column; /* Apila elementos verticalmente */
       align-items: center;
       justify-content: center;
       background: white;
@@ -23,13 +24,22 @@
       cursor: pointer;
       font-family: sans-serif;
       user-select: none;
-      font-size: 14px; /* Tamaño de texto igual a los demás botones */
+      font-size: 14px;
+      gap: 2px; /* Espacio entre elementos */
+      line-height: 1; /* Elimina espacio extra entre líneas */
+      padding: 5px; /* Añade padding para mejor aspecto */
+    }
+    .emoji {
+      font-size: 20px; /* Tamaño ligeramente mayor para el emoji */
     }
     #bgColorPicker { display: none; }
   </style>
 </head>
 <body>
-  <div id="bgButton">🧱 Fondo</div>
+  <div id="bgButton">
+    <span class="emoji">🧱</span> <!-- Emoji en línea separada -->
+    <span>Fondo</span> <!-- Texto en línea separada -->
+  </div>
   <input type="color" id="bgColorPicker" />
 
   <script>
