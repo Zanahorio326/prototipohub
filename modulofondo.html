@@ -5,19 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Botón Fondo</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; }
+    * { 
+      box-sizing: border-box; 
+      margin: 0;  /* Elimina márgenes globales */
+      padding: 0; /* Elimina padding global */
+    }
+    html, body, #bgButton {
+      width: 100%;  /* Ocupa todo el ancho del iframe */
+      height: 100%; /* Ocupa todo el alto del iframe */
+    }
     #bgButton {
-      display: inline-flex;
+      display: flex;
       align-items: center;
       justify-content: center;
-      width: 80px;
-      height: 40px;
       background: white;
       border: 1px solid #ccc;
       cursor: pointer;
       font-family: sans-serif;
       user-select: none;
+      font-size: 14px; /* Tamaño de texto igual a los demás botones */
     }
     #bgColorPicker { display: none; }
   </style>
