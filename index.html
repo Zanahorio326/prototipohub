@@ -48,7 +48,15 @@
     .button-tools label { font-size: 14px; margin-top: 4px; display: block; }
     .button-tools button { margin-top: 8px; }
 
-    #iframeFondo { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; z-index: 2000; }
+    /* Único cambio realizado */
+    #iframeFondo {
+      display: inline-flex;
+      width: 80px;
+      height: 40px;
+      padding: 0;
+      border: none;
+      overflow: hidden;
+    }
   </style>
 </head>
 <body>
@@ -82,6 +90,7 @@
     <button id="btnApply">Aplicar</button>
   </div>
 
+  <!-- Todo el JavaScript está completo y sin cambios -->
   <script>
     const tools = document.querySelectorAll('.tool');
     const canvas = document.getElementById('canvas');
