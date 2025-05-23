@@ -1,12 +1,14 @@
+<!-- modulofondo.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Módulo Fondo</title>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: sans-serif; display: flex; }
+    body { margin: 0; }
+    /* Reutiliza la clase .tool para que el iframe se vea igual */
     .tool {
       display: inline-flex;
       align-items: center;
@@ -15,26 +17,33 @@
       padding: 10px;
       background: white;
       border: 1px solid #ccc;
+      margin-right: 10px;
       text-align: center;
       user-select: none;
       cursor: pointer;
+      font-family: sans-serif;
+      font-size: 16px;
     }
+    /* Oculta el input nativo */
     #bgColorPicker { display: none; }
   </style>
 </head>
 <body>
-  <div id="bgColorTool" class="tool">🧱 Fondo</div>
+  <!-- Este div no se usa: el padre inyecta el HTML completo del botón -->
   <input type="color" id="bgColorPicker" />
 
   <script>
-    const bgColorTool = document.getElementById('bgColorTool');
+    // Creamos dinámicamente dentro del <body> un botón con la clase .tool
+    const btn = document.createElement('div');
+    btn.className = 'tool';
+    btn.textContent = '🧱 Fondo';
+    document.body.appendChild(btn);
+
     const bgColorPicker = document.getElementById('bgColorPicker');
 
-    // Al hacer clic, abrir selector de color
-    bgColorTool.addEventListener('click', () => bgColorPicker.click());
-
-    // Al seleccionar color, enviar mensaje al padre
+    btn.addEventListener('click', () => bgColorPicker.click());
     bgColorPicker.addEventListener('input', e => {
+      // Envía color al padre
       window.parent.postMessage({ bgColor: e.target.value }, '*');
     });
   </script>
