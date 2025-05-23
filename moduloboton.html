@@ -6,15 +6,30 @@
   <title>Módulo Botón</title>
   <style>
     /* Estilos del panel de edición de botón */
-    .button-tools {
-      position: absolute;
-      display: none;
-      background: rgba(255,255,255,0.95);
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #f9f9f9;
+    }
+    .panel-wrapper {
+      width: 300px;
+      padding: 20px;
+      background: white;
       border: 1px solid #ccc;
-      padding: 10px;
-      z-index: 1000;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      border-radius: 4px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .panel-wrapper h1 {
+      margin: 0 0 16px;
+      font-size: 18px;
+      text-align: center;
+    }
+    .button-tools {
+      display: block; /* Mostrar siempre para verificar la UI */
     }
     .button-tools label {
       font-size: 14px;
@@ -26,27 +41,45 @@
       display: block;
       margin-bottom: 8px;
       width: 100%;
+      padding: 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
     }
     .button-tools button {
-      margin-top: 8px;
+      margin-top: 12px;
+      width: 100%;
+      padding: 8px;
+      border: none;
+      background: #007bff;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .button-tools button:hover {
+      background: #0056b3;
     }
   </style>
 </head>
 <body>
-  <!-- Panel de configuración del botón -->
-  <div class="button-tools" id="buttonTools">
-    <label>Texto del botón:<input type="text" id="btnTextInput" /></label>
-    <label>Enlace URL:<input type="text" id="btnUrlInput" /></label>
-    <label>Color de fondo:<input type="color" id="btnBgInput" /></label>
-    <label>Forma:
-      <select id="btnShapeSelect">
-        <option value="rectangular">Rectangular</option>
-        <option value="redondeada">Redondeada</option>
-        <option value="circular">Circular</option>
-        <option value="rombo">Rombo</option>
-      </select>
-    </label>
-    <button id="btnApply">Aplicar</button>
+  <div class="panel-wrapper">
+    <h1>Módulo Botón</h1>
+    <!-- Panel de configuración del botón -->
+    <div class="button-tools" id="buttonTools">
+      <label>Texto del botón:<input type="text" id="btnTextInput" placeholder="Texto..."/></label>
+      <label>Enlace URL:<input type="text" id="btnUrlInput" placeholder="https://..."/></label>
+      <label>Color de fondo:<input type="color" id="btnBgInput" value="#cccccc"/></label>
+      <label>Forma:
+        <select id="btnShapeSelect">
+          <option value="rectangular">Rectangular</option>
+          <option value="redondeada">Redondeada</option>
+          <option value="circular">Circular</option>
+          <option value="rombo">Rombo</option>
+        </select>
+      </label>
+      <button id="btnApply">Aplicar</button>
+    </div>
   </div>
 
   <script>
@@ -61,6 +94,9 @@
     // Datos del botón que se está editando
     let currentData = { id: null, text: '', url: '', bg: '#ffffff', shape: 'rectangular' };
 
+    // Notificar al padre que está listo
+    parent.postMessage({ type: 'moduleButtonReady' }, '*');
+
     // Escucha mensajes desde la página padre
     window.addEventListener('message', e => {
       const data = e.data;
@@ -73,7 +109,7 @@
       btnBgInput.value     = data.bg;
       btnShapeSelect.value = data.shape;
 
-      // Mostramos el panel
+      // Asegurarnos de que el panel está visible
       buttonTools.style.display = 'block';
     });
 
@@ -88,8 +124,22 @@
         shape: btnShapeSelect.value
       };
       parent.postMessage(response, '*');
+      // Ocultar tras aplicar
       buttonTools.style.display = 'none';
     });
   </script>
 </body>
 </html>
+
+
+He actualizado moduloboton.html para que ahora:
+
+Siempre muestre el panel de edición (display: block) dentro de un contenedor visible, con título y estilos claros.
+
+Incluya un postMessage inicial (moduleButtonReady) para que puedas verificar desde el index que el módulo está cargado.
+
+Tenga placeholders en los inputs y un header “Módulo Botón” que confirme que el iframe no está vacío.
+
+
+Ahora, cuando abras moduloboton.html directamente o como iframe, verás el UI de edición del botón, y podrás debuggear la comunicación con la página padre. ¡Prueba cargándolo en el editor!
+
