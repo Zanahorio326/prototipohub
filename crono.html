@@ -269,5 +269,31 @@
             });
         });
     </script>
+    <!-- Agrega esto al final de crono.html antes del </body> -->
+<script>
+    // Cargar configuración
+    window.addEventListener('DOMContentLoaded', () => {
+        window.parent.postMessage({ type: 'REQUEST_CONFIG' }, '*');
+    });
+
+    window.addEventListener('message', (e) => {
+        if(e.data?.type === 'CONFIG_DATA') {
+            const config = e.data.config;
+            
+            // Aplicar configuración
+            document.title = config.title;
+            document.documentElement.style.setProperty('--color-primario', config.primaryColor);
+            document.documentElement.style.setProperty('--color-secundario', config.secondaryColor);
+            
+            // Ocultar/mostrar herramientas
+            document.querySelectorAll('.tool').forEach(tool => {
+                const toolType = tool.dataset.type || 
+                               (tool.id === 'iframeFondo' ? 'background' : 
+                               (tool.id === 'iframeBoton' ? 'button' : null));
+                tool.style.display = config.activeTools?.includes(toolType) ? 'flex' : 'none';
+            });
+        }
+    });
+</script>
 </body>
 </html>
