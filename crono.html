@@ -3,37 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista de Tareas - Proyecto 2025</title>
+    <title>Lista de Tareas - Junio 2025</title>
     <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --task-bg: #f9f9f9;
+            --task-border: #3498db;
+            --hover-bg: #f0f0f0;
+            --completed-color: #2ecc71;
+            --expired-color: #e74c3c;
+            --countdown-normal: #2ecc71;
+            --countdown-urgent: #e74c3c;
+            --date-color: #7f8c8d;
+        }
+
+        .dark-mode {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --task-bg: #2d2d2d;
+            --task-border: #4a90e2;
+            --hover-bg: #3d3d3d;
+            --completed-color: #27ae60;
+            --expired-color: #c0392b;
+            --countdown-normal: #27ae60;
+            --countdown-urgent: #c0392b;
+            --date-color: #95a5a6;
+        }
+
         body {
             font-family: 'Arial', sans-serif;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            color: #333;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
         }
-        
+
         h1 {
-            color: #2c3e50;
+            color: var(--text-color);
             text-align: center;
             margin-bottom: 10px;
+            padding: 0 50px;
         }
-        
+
         #liveClock {
             text-align: center;
             font-size: 1.2em;
-            color: #666;
+            color: var(--date-color);
             margin-bottom: 30px;
         }
-        
+
         .task-list {
             list-style-type: none;
             padding: 0;
         }
-        
+
         .task-item {
-            background-color: #f9f9f9;
-            border-left: 4px solid #3498db;
+            background-color: var(--task-bg);
+            border-left: 4px solid var(--task-border);
             margin-bottom: 10px;
             padding: 15px 20px;
             display: flex;
@@ -42,44 +71,87 @@
             border-radius: 0 4px 4px 0;
             transition: all 0.3s ease;
         }
-        
+
         .task-item:hover {
-            background-color: #f0f0f0;
+            background-color: var(--hover-bg);
             transform: translateX(5px);
         }
-        
+
         .task-name {
             font-weight: bold;
             flex-grow: 1;
             margin-right: 15px;
+            min-width: 45%;
         }
-        
+
         .task-date {
-            color: #7f8c8d;
+            color: var(--date-color);
             font-size: 0.9em;
             margin-right: 15px;
-            min-width: 150px;
+            min-width: 120px;
         }
-        
+
         .countdown {
-            color: #2ecc71;
+            color: var(--countdown-normal);
             font-weight: bold;
-            min-width: 200px;
+            min-width: 140px;
             text-align: right;
         }
-        
+
         .completed {
             text-decoration: line-through;
             opacity: 0.7;
-            border-left-color: #2ecc71;
+            border-left-color: var(--completed-color);
         }
-        
+
         .expired {
-            border-left-color: #e74c3c;
+            border-left-color: var(--expired-color);
+        }
+
+        .dark-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+                padding: 0 30px;
+            }
+
+            .task-item {
+                flex-wrap: wrap;
+                padding: 12px;
+            }
+
+            .task-name {
+                min-width: 100%;
+                margin-bottom: 8px;
+            }
+
+            .task-date, .countdown {
+                font-size: 0.8em;
+                min-width: auto;
+            }
+
+            .countdown {
+                text-align: left;
+            }
         }
     </style>
 </head>
 <body>
+    <button id="darkModeToggle" class="dark-mode-toggle">🌙</button>
     <h1>Lista de Tareas - Junio 2025</h1>
     <div id="liveClock"></div>
     
@@ -107,7 +179,25 @@
     </ul>
 
     <script>
-        // Actualizar reloj en tiempo real
+        // Modo oscuro
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const body = document.body;
+
+        function toggleDarkMode() {
+            body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', body.classList.contains('dark-mode'));
+            darkModeToggle.textContent = body.classList.contains('dark-mode') ? '☀️' : '🌙';
+        }
+
+        darkModeToggle.addEventListener('click', toggleDarkMode);
+        
+        // Cargar preferencia de modo oscuro
+        if (localStorage.getItem('darkMode') === 'true') {
+            body.classList.add('dark-mode');
+            darkModeToggle.textContent = '☀️';
+        }
+
+        // Reloj en tiempo real
         function updateClock() {
             const options = {
                 timeZone: 'America/Santiago',
@@ -123,45 +213,56 @@
             document.getElementById('liveClock').innerHTML = `Hora actual en Santiago: ${now}`;
         }
 
-        // Actualizar contadores
+        // Actualizar y ordenar tareas
         function updateCountdowns() {
             const now = new Date();
+            const tasks = Array.from(document.querySelectorAll('.task-item'));
             
-            document.querySelectorAll('.task-item').forEach(task => {
+            tasks.forEach(task => {
                 const deadline = new Date(task.dataset.deadline);
                 const timeDifference = deadline - now;
                 const countdown = task.querySelector('.countdown');
 
                 if (timeDifference < 0) {
                     countdown.textContent = 'Tiempo expirado';
-                    countdown.style.color = '#e74c3c';
+                    countdown.style.color = 'var(--countdown-urgent)';
                     task.classList.add('expired');
-                    return;
+                } else {
+                    const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
+                    
+                    countdown.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+                    countdown.style.color = days < 3 ? 'var(--countdown-urgent)' : 'var(--countdown-normal)';
                 }
-                
-                const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
-                
-                countdown.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
-                
-                // Cambiar color cuando quedan menos de 3 días
-                countdown.style.color = days < 3 ? '#e74c3c' : '#2ecc71';
             });
+
+            // Ordenar tareas
+            tasks.sort((a, b) => {
+                const aTime = new Date(a.dataset.deadline) - now;
+                const bTime = new Date(b.dataset.deadline) - now;
+                
+                if (aTime < 0 && bTime < 0) return 0;
+                if (aTime < 0) return 1;
+                if (bTime < 0) return -1;
+                return aTime - bTime;
+            });
+
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+            tasks.forEach(task => taskList.appendChild(task));
         }
 
-        // Actualizaciones iniciales
+        // Inicialización
         updateClock();
         updateCountdowns();
-
-        // Actualizar cada segundo
         setInterval(() => {
             updateClock();
             updateCountdowns();
         }, 1000);
 
-        // Permitir marcar tareas como completadas
+        // Marcar tareas como completadas
         document.querySelectorAll('.task-item').forEach(item => {
             item.addEventListener('click', function() {
                 this.classList.toggle('completed');
