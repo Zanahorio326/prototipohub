@@ -118,7 +118,7 @@
   <div id="tasks" class="tasks"></div>
 
   <script>
-    // Gestión de tema con persistencia y animación
+    // Tema con persistencia y animación
     const toggleBtn = document.getElementById('theme-toggle');
     const root = document.documentElement;
     let dark = localStorage.getItem('theme') === 'dark';
@@ -150,25 +150,28 @@
     }
     setInterval(updateClock, 1000); updateClock();
 
-    // Carga y render de tareas
-    let tasks = JSON.parse(localStorage.getItem('agora_tasks') || '[]');
-    if (!tasks.length) {
-      tasks = [{
-        name: 'Prototipo página web',
-        deadline: '2025-06-19T23:59:59',
-        state: 'dev',
-        desc: 'Desarrollo del prototipo funcional base para la presentación inicial en el congreso.'
-      }];
-      localStorage.setItem('agora_tasks', JSON.stringify(tasks));
-    }
+    // URL del JSON compartido
+    const TASKS_URL = 'https://zanahorio326.github.io/prototipohub/tasks.json';
+    let tasks = [];
     const container = document.getElementById('tasks');
+
+    async function loadTasks() {
+      try {
+        const res = await fetch(TASKS_URL);
+        tasks = await res.json();
+        renderTasks(); updateCountdowns();
+        setInterval(updateCountdowns, 60000);
+      } catch (e) {
+        console.error('Error cargando tareas:', e);
+        container.innerHTML = '<p style="color:red">No se pudo cargar tareas.</p>';
+      }
+    }
 
     function renderTasks() {
       container.innerHTML = '';
       tasks.forEach((t, i) => {
         const card = document.createElement('div'); card.className = 'task-card';
         card.dataset.deadline = t.deadline; card.id = 'task'+i;
-        // Borde según expirado o no se asigna después
         card.innerHTML = `
           <div class="task-header">
             <div>
@@ -217,8 +220,7 @@
       });
     }
 
-    renderTasks(); updateCountdowns();
-    setInterval(updateCountdowns, 60000);
+    loadTasks();
   </script>
 </body>
 </html>
