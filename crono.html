@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cronograma de Tareas</title>
+  <title>Pendientes ÁGORA</title>
   <style>
     :root {
       --bg: #fff;
@@ -31,13 +31,16 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      transition: var(--transition);
     }
     body {
       background: var(--bg);
       color: var(--fg);
       font-family: Arial, sans-serif;
       padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: background var(--transition), color var(--transition);
     }
     .toggle {
       position: fixed;
@@ -45,16 +48,31 @@
       right: 10px;
       font-size: 24px;
       cursor: pointer;
+      z-index: 1001;
+    }
+    .header {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 10px;
+      text-align: center;
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 600px;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: bold;
     }
     .clock {
-      text-align: center;
       font-size: 20px;
-      margin-bottom: 20px;
+      color: var(--fg);
     }
     .tasks {
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: 1fr;
       gap: 15px;
+      width: 100%;
+      max-width: 600px;
     }
     .task-card {
       background: var(--card-bg);
@@ -64,6 +82,7 @@
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       cursor: pointer;
       transform: translateX(0);
+      transition: transform var(--transition), border-color var(--transition);
     }
     .task-card:hover {
       transform: translateX(5px);
@@ -72,6 +91,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
     }
     .task-title {
       font-size: 18px;
@@ -113,13 +133,25 @@
       font-size: 14px;
       line-height: 1.6;
     }
+    .theme-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 0;
+      z-index: 1000;
+      transition: height var(--transition) ease;
+    }
   </style>
 </head>
 <body>
   <div class="toggle" id="theme-toggle">☀️</div>
-  <div class="clock" id="clock">Hora actual en Santiago: cargando...</div>
+  <div class="header">
+    <h1>Pendientes ÁGORA</h1>
+    <div class="clock" id="clock">Hora actual en Santiago: cargando...</div>
+  </div>
   <div class="tasks">
-    <div class="task-card" data-deadline="2025-06-19" id="task1">
+    <div class="task-card" data-deadline="2025-06-19T23:59:59" id="task1">
       <div class="task-header">
         <div>
           <div class="task-title">Prototipo página web</div>
@@ -135,46 +167,69 @@
   </div>
 
   <script>
-    // Dark mode toggle
-    const toggle = document.getElementById('theme-toggle');
+    // Manejo de tema con animación de barrido
+    const toggleBtn = document.getElementById('theme-toggle');
     const root = document.documentElement;
-    let dark = false;
-    toggle.addEventListener('click', () => {
-      dark = !dark;
+    let dark = localStorage.getItem('theme') === 'dark';
+    function applyTheme() {
       if (dark) {
         root.setAttribute('data-theme', 'dark');
-        toggle.textContent = '🌙';
+        toggleBtn.textContent = '🌙';
       } else {
         root.removeAttribute('data-theme');
-        toggle.textContent = '☀️';
+        toggleBtn.textContent = '☀️';
       }
+    }
+    function performToggle() {
+      dark = !dark;
+      localStorage.setItem('theme', dark ? 'dark' : 'light');
+      applyTheme();
+    }
+    toggleBtn.addEventListener('click', () => {
+      // Crear overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'theme-overlay';
+      overlay.style.background = dark ? '#fff' : '#121212';
+      document.body.appendChild(overlay);
+      // Barrido hacia abajo
+      requestAnimationFrame(() => overlay.style.height = '100%');
+      overlay.addEventListener('transitionend', () => {
+        performToggle();
+        // Barrido hacia arriba
+        overlay.style.height = '0';
+        overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+      }, { once: true });
     });
+    applyTheme();
 
-    // Clock in Santiago
+    // Reloj en Santiago
     function updateClock() {
       const opts = { timeZone: 'America/Santiago', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-      const now = new Date().toLocaleString('es-CL', opts);
-      // Format: martes, 11 de junio de 2024, 15:23:47
-      document.getElementById('clock').textContent = 'Hora actual en Santiago: ' + now;
+      const nowStr = new Date().toLocaleString('es-CL', opts);
+      document.getElementById('clock').textContent = 'Hora actual en Santiago: ' + nowStr;
     }
     setInterval(updateClock, 1000);
     updateClock();
 
-    // Countdown and color logic
+    // Contador con días, horas, minutos
     function updateCountdown(id) {
       const card = document.getElementById(id);
-      const deadline = new Date(card.dataset.deadline + 'T23:59:59');
+      const deadline = new Date(card.dataset.deadline);
       const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santiago' }));
-      const diff = (deadline - now) / (1000 * 60 * 60 * 24);
+      const diffMs = deadline - now;
       const countdownEl = document.getElementById('countdown' + id.slice(-1));
-      if (diff < 0) {
+      if (diffMs <= 0) {
         countdownEl.textContent = 'Tiempo expirado';
         countdownEl.classList.add('red');
         card.style.borderLeftColor = 'var(--border-expired)';
       } else {
-        const days = Math.ceil(diff);
-        countdownEl.textContent = days + ' día' + (days > 1 ? 's' : '');
-        if (days > 3) {
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diffMs / (1000 * 60)) % 60);
+        countdownEl.textContent = `${days} día${days!==1?'s':''}, ${hours}h ${minutes}m`;
+        card.style.borderLeftColor = 'var(--border-active)';
+        const totalHours = diffMs / (1000 * 60 * 60);
+        if (totalHours > 72) {
           countdownEl.classList.add('green');
         } else {
           countdownEl.classList.add('red');
@@ -183,7 +238,7 @@
     }
     updateCountdown('task1');
 
-    // Toggle details on click
+    // Mostrar/ocultar detalles
     document.getElementById('task1').addEventListener('click', () => {
       const det = document.getElementById('details1');
       det.style.display = det.style.display === 'block' ? 'none' : 'block';
