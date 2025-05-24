@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración</title>
+    <style>
+        :root {
+            --color-primario: #2196F3;
+            --color-secundario: #FF4081;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+
+        .config-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .preview-iframe {
+            width: 100%;
+            height: 800px;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            background: white;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: var(--color-primario);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #1976D2;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 10px;
+        }
+
+        .color-picker input {
+            width: 50px;
+            height: 40px;
+            padding: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="config-sections">
+            <!-- Sección de Configuración General -->
+            <div class="config-section">
+                <h2>Configuración General</h2>
+                <div class="form-group">
+                    <label>Título de la Página</label>
+                    <input type="text" id="pageTitle" value="Editor Prototipo">
+                </div>
+                
+                <div class="form-group color-picker">
+                    <div>
+                        <label>Color Primario</label>
+                        <input type="color" id="colorPrimary" value="#2196F3">
+                    </div>
+                    <div>
+                        <label>Color Secundario</label>
+                        <input type="color" id="colorSecondary" value="#FF4081">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección de Herramientas -->
+            <div class="config-section">
+                <h2>Gestión de Herramientas</h2>
+                <div class="form-group">
+                    <label>Herramientas Activas</label>
+                    <select id="activeTools" multiple size="5">
+                        <option value="text" selected>Texto</option>
+                        <option value="image" selected>Imagen</option>
+                        <option value="button" selected>Botón</option>
+                        <option value="background" selected>Fondo</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Sección de CSS Personalizado -->
+            <div class="config-section">
+                <h2>CSS Personalizado</h2>
+                <div class="form-group">
+                    <textarea id="customCSS" rows="10" placeholder="Ingresa tu CSS personalizado aquí..."></textarea>
+                </div>
+                <button onclick="applyCustomCSS()">Aplicar CSS</button>
+            </div>
+
+            <button onclick="saveConfig()" style="width: 100%; margin-top: 20px;">Guardar Cambios</button>
+        </div>
+
+        <!-- Vista Previa en Tiempo Real -->
+        <div class="preview-section">
+            <iframe src="crono.html" class="preview-iframe" id="livePreview"></iframe>
+        </div>
+    </div>
+
+    <script>
+        // Cargar configuración existente
+        function loadConfig() {
+            const config = JSON.parse(localStorage.getItem('editorConfig')) || {};
+            
+            document.getElementById('pageTitle').value = config.title || 'Editor Prototipo';
+            document.getElementById('colorPrimary').value = config.primaryColor || '#2196F3';
+            document.getElementById('colorSecondary').value = config.secondaryColor || '#FF4081';
+            document.getElementById('customCSS').value = config.customCSS || '';
+            
+            // Cargar herramientas activas
+            if(config.activeTools) {
+                Array.from(document.getElementById('activeTools').options).forEach(option => {
+                    option.selected = config.activeTools.includes(option.value);
+                });
+            }
+        }
+
+        // Guardar configuración
+        function saveConfig() {
+            const config = {
+                title: document.getElementById('pageTitle').value,
+                primaryColor: document.getElementById('colorPrimary').value,
+                secondaryColor: document.getElementById('colorSecondary').value,
+                activeTools: Array.from(document.getElementById('activeTools').selectedOptions)
+                                .map(option => option.value),
+                customCSS: document.getElementById('customCSS').value
+            };
+
+            localStorage.setItem('editorConfig', JSON.stringify(config));
+            updatePreview();
+            alert('¡Configuración guardada correctamente!');
+        }
+
+        // Aplicar CSS personalizado
+        function applyCustomCSS() {
+            const css = document.getElementById('customCSS').value;
+            const iframe = document.getElementById('livePreview');
+            const style = iframe.contentDocument.createElement('style');
+            style.textContent = css;
+            iframe.contentDocument.head.appendChild(style);
+        }
+
+        // Actualizar vista previa
+        function updatePreview() {
+            const iframe = document.getElementById('livePreview');
+            iframe.contentDocument.location.reload();
+        }
+
+        // Inicialización
+        window.onload = () => {
+            loadConfig();
+            document.querySelectorAll('input, select, textarea').forEach(element => {
+                element.addEventListener('input', saveConfig);
+            });
+        };
+
+        // Comunicación entre frames
+        window.addEventListener('message', (e) => {
+            if(e.data?.type === 'REQUEST_CONFIG') {
+                const config = JSON.parse(localStorage.getItem('editorConfig')) || {};
+                e.source.postMessage({ type: 'CONFIG_DATA', config }, '*');
+            }
+        });
+    </script>
+</body>
+</html>
