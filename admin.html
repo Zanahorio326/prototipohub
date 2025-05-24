@@ -3,208 +3,301 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Administración</title>
+    <title>Administrador de Tareas</title>
     <style>
         :root {
-            --color-primario: #2196F3;
-            --color-secundario: #FF4081;
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --task-bg: #f9f9f9;
+            --border-color: #3498db;
+            --button-bg: #2ecc71;
+            --button-hover: #27ae60;
+            --danger-bg: #e74c3c;
+            --danger-hover: #c0392b;
+        }
+
+        .dark-mode {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --task-bg: #2d2d2d;
+            --border-color: #4a90e2;
+            --button-bg: #27ae60;
+            --button-hover: #219653;
+            --danger-bg: #c0392b;
+            --danger-hover: #a93226;
         }
 
         body {
-            font-family: 'Segoe UI', sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: #f5f5f5;
-        }
-
-        .admin-container {
-            max-width: 1200px;
+            font-family: 'Arial', sans-serif;
+            max-width: 1000px;
             margin: 0 auto;
-            display: grid;
-            grid-template-columns: 300px 1fr;
-            gap: 20px;
-        }
-
-        .config-section {
-            background: white;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
         }
 
-        .preview-iframe {
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .admin-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .form-section {
+            border-right: 2px solid var(--border-color);
+            padding-right: 30px;
+        }
+
+        .preview-section iframe {
             width: 100%;
-            height: 800px;
-            border: 2px dashed #ccc;
-            border-radius: 10px;
-            background: white;
+            height: 600px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .task-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
         }
 
         .form-group {
-            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
 
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #333;
-        }
-
-        input, select, textarea {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
+        input, textarea, button {
+            padding: 10px;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
-            box-sizing: border-box;
+            background-color: var(--task-bg);
+            color: var(--text-color);
         }
 
         button {
-            background: var(--color-primario);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .save-btn {
+            background-color: var(--button-bg);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s;
         }
 
-        button:hover {
-            background: #1976D2;
+        .save-btn:hover {
+            background-color: var(--button-hover);
         }
 
-        .color-picker {
+        .delete-btn {
+            background-color: var(--danger-bg);
+            color: white;
+            border: none;
+        }
+
+        .delete-btn:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .tasks-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        .task-item-admin {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background-color: var(--task-bg);
+            border-radius: 4px;
+        }
+
+        .task-controls {
             display: flex;
             gap: 10px;
         }
 
-        .color-picker input {
-            width: 50px;
-            height: 40px;
-            padding: 2px;
+        .dark-mode-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        @media (max-width: 768px) {
+            .admin-panel {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-section {
+                border-right: none;
+                padding-right: 0;
+                border-bottom: 2px solid var(--border-color);
+                padding-bottom: 30px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="admin-container">
-        <div class="config-sections">
-            <!-- Sección de Configuración General -->
-            <div class="config-section">
-                <h2>Configuración General</h2>
+    <button class="dark-mode-toggle" onclick="toggleDarkMode()">🌙</button>
+    <h1>Administrador de Tareas</h1>
+    
+    <div class="admin-panel">
+        <div class="form-section">
+            <form class="task-form" id="taskForm">
                 <div class="form-group">
-                    <label>Título de la Página</label>
-                    <input type="text" id="pageTitle" value="Editor Prototipo">
+                    <label>Nombre de la tarea:</label>
+                    <input type="text" id="taskName" required>
                 </div>
                 
-                <div class="form-group color-picker">
-                    <div>
-                        <label>Color Primario</label>
-                        <input type="color" id="colorPrimary" value="#2196F3">
-                    </div>
-                    <div>
-                        <label>Color Secundario</label>
-                        <input type="color" id="colorSecondary" value="#FF4081">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sección de Herramientas -->
-            <div class="config-section">
-                <h2>Gestión de Herramientas</h2>
                 <div class="form-group">
-                    <label>Herramientas Activas</label>
-                    <select id="activeTools" multiple size="5">
-                        <option value="text" selected>Texto</option>
-                        <option value="image" selected>Imagen</option>
-                        <option value="button" selected>Botón</option>
-                        <option value="background" selected>Fondo</option>
-                    </select>
+                    <label>Fecha límite:</label>
+                    <input type="datetime-local" id="taskDeadline" required>
                 </div>
-            </div>
-
-            <!-- Sección de CSS Personalizado -->
-            <div class="config-section">
-                <h2>CSS Personalizado</h2>
+                
+                <input type="hidden" id="editId">
+                
                 <div class="form-group">
-                    <textarea id="customCSS" rows="10" placeholder="Ingresa tu CSS personalizado aquí..."></textarea>
+                    <button type="submit" class="save-btn" id="submitBtn">Agregar Tarea</button>
                 </div>
-                <button onclick="applyCustomCSS()">Aplicar CSS</button>
-            </div>
+            </form>
 
-            <button onclick="saveConfig()" style="width: 100%; margin-top: 20px;">Guardar Cambios</button>
+            <ul class="tasks-list" id="tasksListAdmin"></ul>
         </div>
-
-        <!-- Vista Previa en Tiempo Real -->
+        
         <div class="preview-section">
-            <iframe src="crono.html" class="preview-iframe" id="livePreview"></iframe>
+            <iframe src="crono.html" title="Vista previa"></iframe>
         </div>
     </div>
 
     <script>
-        // Cargar configuración existente
-        function loadConfig() {
-            const config = JSON.parse(localStorage.getItem('editorConfig')) || {};
+        const TASKS_KEY = 'crono-tasks';
+        const defaultTaskIds = ['task-1', 'task-2', 'task-3', 'task-4'];
+
+        // Modo oscuro
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+            document.querySelector('.dark-mode-toggle').textContent = 
+                document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+        }
+
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+            document.querySelector('.dark-mode-toggle').textContent = '☀️';
+        }
+
+        // Cargar tareas
+        function loadTasks() {
+            return JSON.parse(localStorage.getItem(TASKS_KEY)) || [];
+        }
+
+        // Renderizar lista de tareas
+        function renderAdminTasks() {
+            const tasks = loadTasks();
+            const tasksList = document.getElementById('tasksListAdmin');
             
-            document.getElementById('pageTitle').value = config.title || 'Editor Prototipo';
-            document.getElementById('colorPrimary').value = config.primaryColor || '#2196F3';
-            document.getElementById('colorSecondary').value = config.secondaryColor || '#FF4081';
-            document.getElementById('customCSS').value = config.customCSS || '';
+            tasksList.innerHTML = '';
             
-            // Cargar herramientas activas
-            if(config.activeTools) {
-                Array.from(document.getElementById('activeTools').options).forEach(option => {
-                    option.selected = config.activeTools.includes(option.value);
+            tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.className = 'task-item-admin';
+                li.innerHTML = `
+                    <div>
+                        <strong>${task.name}</strong><br>
+                        <small>${new Date(task.deadline).toLocaleString('es-CL')}</small>
+                    </div>
+                    <div class="task-controls">
+                        <button class="save-btn" onclick="editTask('${task.id}')">✏️</button>
+                        ${defaultTaskIds.includes(task.id) ? '' : 
+                        '<button class="delete-btn" onclick="deleteTask(\'' + task.id + '\')">🗑️</button>'}
+                    </div>
+                `;
+                tasksList.appendChild(li);
+            });
+        }
+
+        // Manejar formulario
+        document.getElementById('taskForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const taskId = document.getElementById('editId').value;
+            const taskName = document.getElementById('taskName').value;
+            const taskDeadline = document.getElementById('taskDeadline').value;
+            
+            const tasks = loadTasks();
+            
+            if (taskId) {
+                // Editar tarea existente
+                const index = tasks.findIndex(t => t.id === taskId);
+                if (index !== -1) {
+                    tasks[index] = {
+                        ...tasks[index],
+                        name: taskName,
+                        deadline: new Date(taskDeadline).toISOString()
+                    };
+                }
+            } else {
+                // Nueva tarea
+                tasks.push({
+                    id: 'task-' + Date.now(),
+                    name: taskName,
+                    deadline: new Date(taskDeadline).toISOString(),
+                    completed: false
                 });
             }
-        }
-
-        // Guardar configuración
-        function saveConfig() {
-            const config = {
-                title: document.getElementById('pageTitle').value,
-                primaryColor: document.getElementById('colorPrimary').value,
-                secondaryColor: document.getElementById('colorSecondary').value,
-                activeTools: Array.from(document.getElementById('activeTools').selectedOptions)
-                                .map(option => option.value),
-                customCSS: document.getElementById('customCSS').value
-            };
-
-            localStorage.setItem('editorConfig', JSON.stringify(config));
-            updatePreview();
-            alert('¡Configuración guardada correctamente!');
-        }
-
-        // Aplicar CSS personalizado
-        function applyCustomCSS() {
-            const css = document.getElementById('customCSS').value;
-            const iframe = document.getElementById('livePreview');
-            const style = iframe.contentDocument.createElement('style');
-            style.textContent = css;
-            iframe.contentDocument.head.appendChild(style);
-        }
-
-        // Actualizar vista previa
-        function updatePreview() {
-            const iframe = document.getElementById('livePreview');
-            iframe.contentDocument.location.reload();
-        }
-
-        // Inicialización
-        window.onload = () => {
-            loadConfig();
-            document.querySelectorAll('input, select, textarea').forEach(element => {
-                element.addEventListener('input', saveConfig);
-            });
-        };
-
-        // Comunicación entre frames
-        window.addEventListener('message', (e) => {
-            if(e.data?.type === 'REQUEST_CONFIG') {
-                const config = JSON.parse(localStorage.getItem('editorConfig')) || {};
-                e.source.postMessage({ type: 'CONFIG_DATA', config }, '*');
-            }
+            
+            localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
+            renderAdminTasks();
+            resetForm();
         });
+
+        // Editar tarea
+        function editTask(id) {
+            const tasks = loadTasks();
+            const task = tasks.find(t => t.id === id);
+            
+            if (task) {
+                document.getElementById('editId').value = task.id;
+                document.getElementById('taskName').value = task.name;
+                document.getElementById('taskDeadline').value = 
+                    new Date(task.deadline).toISOString().slice(0, 16);
+                document.getElementById('submitBtn').textContent = 'Actualizar Tarea';
+            }
+        }
+
+        // Eliminar tarea
+        function deleteTask(id) {
+            if (defaultTaskIds.includes(id)) return;
+            
+            const tasks = loadTasks().filter(t => t.id !== id);
+            localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
+            renderAdminTasks();
+        }
+
+        // Resetear formulario
+        function resetForm() {
+            document.getElementById('taskForm').reset();
+            document.getElementById('editId').value = '';
+            document.getElementById('submitBtn').textContent = 'Agregar Tarea';
+        }
+
+        // Inicializar
+        renderAdminTasks();
     </script>
 </body>
 </html>
