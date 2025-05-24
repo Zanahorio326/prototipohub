@@ -5,76 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin ÁGORA</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      color: #333;
-      display: flex;
-      gap: 20px;
-      padding: 20px;
-    }
-    .panel {
-      background: #fff;
-      padding: 15px;
-      border-radius: 6px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      flex: 1;
-      max-width: 400px;
-      display: flex;
-      flex-direction: column;
-    }
+    body {font-family: Arial, sans-serif; background: #f5f5f5; color: #333; display: flex; gap: 20px; padding: 20px;}
+    .panel {background: #fff; padding: 15px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex: 1; max-width: 400px; display: flex; flex-direction: column;}
     h2 { margin-bottom: 10px; }
     label { font-weight: bold; margin-top: 10px; }
-    input, select, textarea {
-      width: 100%;
-      padding: 8px;
-      margin-top: 4px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 14px;
-    }
+    input, select, textarea { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
     textarea { resize: vertical; }
-    button {
-      margin-top: 15px;
-      padding: 10px;
-      border: none;
-      border-radius: 4px;
-      font-size: 14px;
-      cursor: pointer;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
+    .actions { display: flex; justify-content: flex-end; gap: 5px; margin-top: 15px; }
+    button { padding: 10px; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
     .btn-save { background: #2ecc71; color: #fff; }
-    .btn-delete { background: #e74c3c; color: #fff; margin-left: 5px; }
-    .task-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px;
-      border-bottom: 1px solid #eee;
-    }
+    .btn-delete { background: #e74c3c; color: #fff; }
+    .task-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; }
     .task-item span { flex: 1; }
     .task-item button { background: transparent; border: none; cursor: pointer; font-size: 16px; }
-    .preview {
-      flex: 2;
-    }
-    .preview iframe {
-      width: 100%;
-      height: 600px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
+    .preview { flex: 2; }
+    .preview iframe { width: 100%; height: 600px; border: 1px solid #ccc; border-radius: 4px; }
   </style>
 </head>
 <body>
   <div class="panel">
-    <h2>Editar Tarea</h2>
+    <h2 id="form-title">Nueva Tarea</h2>
     <form id="task-form">
       <label for="name">Nombre</label>
       <input type="text" id="name" required>
       <label for="date">Fecha límite</label>
       <input type="date" id="date" required>
       <label for="state">Estado</label>
-      <select id="state">
+      <select id="state" required>
+        <option value="">-- Selecciona estado --</option>
         <option value="paused">En pausa</option>
         <option value="convo">En conversación</option>
         <option value="estudio">En estudio</option>
@@ -84,9 +42,10 @@
         <option value="observ">En observación</option>
       </select>
       <label for="desc">Descripción</label>
-      <textarea id="desc" rows="3"></textarea>
-      <div style="display:flex; justify-content:flex-end;">
-        <button type="button" class="btn-save" id="save-btn">Guardar</button>
+      <textarea id="desc" rows="3" required></textarea>
+      <div class="actions">
+        <button type="button" class="btn-delete" id="cancel-btn" style="display:none;">Cancelar</button>
+        <button type="submit" class="btn-save" id="save-btn">Guardar</button>
       </div>
     </form>
 
@@ -100,43 +59,51 @@
   </div>
 
   <script>
-    // Cargar y guardar tareas en localStorage
     let tasks = JSON.parse(localStorage.getItem('agora_tasks') || '[]');
-    let editIndex = null;
-
     const form = document.getElementById('task-form');
     const listEl = document.getElementById('task-list');
     const iframe = document.getElementById('crono-preview');
+    let editIndex = null;
 
     function renderList() {
       listEl.innerHTML = '';
       tasks.forEach((t, i) => {
         const item = document.createElement('div');
         item.className = 'task-item';
-        item.innerHTML = `
-          <span>${t.name} (${t.date}, ${t.state})</span>
-          <div>
-            <button title="Editar" onclick="startEdit(${i})">✏️</button>
-            <button title="Eliminar" onclick="deleteTask(${i})" class="btn-delete">🗑️</button>
-          </div>`;
+        const name = document.createElement('span');
+        name.textContent = `${t.name} (${new Date(t.deadline).toLocaleDateString('es-CL')}, ${getStateText(t.state)})`;
+        const editBtn = document.createElement('button'); editBtn.textContent = '✏️';
+        editBtn.title = 'Editar'; editBtn.onclick = () => startEdit(i);
+        const delBtn = document.createElement('button'); delBtn.textContent = '🗑️';
+        delBtn.title = 'Eliminar'; delBtn.className = 'btn-delete'; delBtn.onclick = () => deleteTask(i);
+        item.append(name, editBtn, delBtn);
         listEl.appendChild(item);
       });
     }
 
     function syncPreview() {
       localStorage.setItem('agora_tasks', JSON.stringify(tasks));
-      // Recargar iframe para reflejar cambios
       iframe.contentWindow.location.reload();
     }
 
     function startEdit(i) {
       editIndex = i;
       const t = tasks[i];
+      document.getElementById('form-title').textContent = 'Editar Tarea';
       form.name.value = t.name;
-      form.date.value = t.date;
+      form.date.value = t.deadline.slice(0,10);
       form.state.value = t.state;
       form.desc.value = t.desc;
       document.getElementById('save-btn').textContent = 'Actualizar';
+      document.getElementById('cancel-btn').style.display = 'inline-block';
+    }
+
+    function cancelEdit() {
+      editIndex = null;
+      form.reset();
+      document.getElementById('form-title').textContent = 'Nueva Tarea';
+      document.getElementById('save-btn').textContent = 'Guardar';
+      document.getElementById('cancel-btn').style.display = 'none';
     }
 
     function deleteTask(i) {
@@ -147,25 +114,33 @@
       }
     }
 
-    document.getElementById('save-btn').addEventListener('click', () => {
-      const t = {
-        name: form.name.value,
-        date: form.date.value,
-        state: form.state.value,
-        desc: form.desc.value,
-      };
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = form.name.value.trim();
+      const date = form.date.value;
+      const state = form.state.value;
+      const desc = form.desc.value.trim();
+      if (!name || !date || !state || !desc) {
+        alert('Por favor, completa todos los campos.');
+        return;
+      }
+      const t = { name, deadline: date + 'T23:59:59', state, desc };
       if (editIndex === null) tasks.push(t);
       else {
         tasks[editIndex] = t;
-        editIndex = null;
-        document.getElementById('save-btn').textContent = 'Guardar';
       }
-      form.reset();
+      cancelEdit();
       renderList();
       syncPreview();
     });
 
-    // Inicialización
+    document.getElementById('cancel-btn').addEventListener('click', cancelEdit);
+
+    function getStateText(s) {
+      return { paused:'En pausa', convo:'En conversación', estudio:'En estudio', dev:'En desarrollo', test:'Testing', mercado:'En el mercado', observ:'En observación' }[s] || '';
+    }
+
+    // Inicializar
     renderList();
   </script>
 </body>
