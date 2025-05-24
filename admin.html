@@ -73,7 +73,7 @@
             gap: 5px;
         }
 
-        input, textarea, button {
+        input, textarea, select, button {
             padding: 10px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
@@ -127,6 +127,14 @@
             gap: 10px;
         }
 
+        .status-badge {
+            font-size: 0.75em;
+            padding: 4px 8px;
+            border-radius: 12px;
+            margin-left: 10px;
+            text-transform: uppercase;
+        }
+
         .dark-mode-toggle {
             position: fixed;
             top: 20px;
@@ -150,6 +158,15 @@
                 padding-bottom: 30px;
             }
         }
+
+        /* Colores de estados */
+        .status-en-pausa { background: #95a5a6; color: white; }
+        .status-en-conversacion { background: #3498db; color: white; }
+        .status-en-estudio { background: #9b59b6; color: white; }
+        .status-en-desarrollo { background: #f1c40f; color: black; }
+        .status-implementacion-testing { background: #e67e22; color: white; }
+        .status-en-el-mercado { background: #2ecc71; color: white; }
+        .status-en-observacion { background: #e74c3c; color: white; }
     </style>
 </head>
 <body>
@@ -167,6 +184,24 @@
                 <div class="form-group">
                     <label>Fecha límite:</label>
                     <input type="datetime-local" id="taskDeadline" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Estado:</label>
+                    <select id="taskStatus" required>
+                        <option value="en-pausa">En pausa</option>
+                        <option value="en-conversacion">En conversación</option>
+                        <option value="en-estudio">En estudio</option>
+                        <option value="en-desarrollo">En desarrollo</option>
+                        <option value="implementacion-testing">Implementación Testing</option>
+                        <option value="en-el-mercado">En el mercado</option>
+                        <option value="en-observacion">En observación</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Descripción:</label>
+                    <textarea id="taskDescription" rows="4" required></textarea>
                 </div>
                 
                 <input type="hidden" id="editId">
@@ -186,7 +221,6 @@
 
     <script>
         const TASKS_KEY = 'crono-tasks';
-        const defaultTaskIds = ['task-1', 'task-2', 'task-3', 'task-4'];
 
         // Modo oscuro
         function toggleDarkMode() {
@@ -218,13 +252,14 @@
                 li.className = 'task-item-admin';
                 li.innerHTML = `
                     <div>
-                        <strong>${task.name}</strong><br>
-                        <small>${new Date(task.deadline).toLocaleString('es-CL')}</small>
+                        <strong>${task.name}</strong>
+                        <span class="status-badge status-${task.status}">${task.status.replace(/-/g, ' ')}</span><br>
+                        <small>${new Date(task.deadline).toLocaleString('es-CL')}</small><br>
+                        <small style="color: var(--text-color); opacity: 0.8;">${task.description.substring(0, 40)}...</small>
                     </div>
                     <div class="task-controls">
                         <button class="save-btn" onclick="editTask('${task.id}')">✏️</button>
-                        ${defaultTaskIds.includes(task.id) ? '' : 
-                        '<button class="delete-btn" onclick="deleteTask(\'' + task.id + '\')">🗑️</button>'}
+                        <button class="delete-btn" onclick="deleteTask('${task.id}')">🗑️</button>
                     </div>
                 `;
                 tasksList.appendChild(li);
@@ -238,6 +273,8 @@
             const taskId = document.getElementById('editId').value;
             const taskName = document.getElementById('taskName').value;
             const taskDeadline = document.getElementById('taskDeadline').value;
+            const taskStatus = document.getElementById('taskStatus').value;
+            const taskDescription = document.getElementById('taskDescription').value;
             
             const tasks = loadTasks();
             
@@ -248,7 +285,9 @@
                     tasks[index] = {
                         ...tasks[index],
                         name: taskName,
-                        deadline: new Date(taskDeadline).toISOString()
+                        deadline: new Date(taskDeadline).toISOString(),
+                        status: taskStatus,
+                        description: taskDescription
                     };
                 }
             } else {
@@ -257,6 +296,8 @@
                     id: 'task-' + Date.now(),
                     name: taskName,
                     deadline: new Date(taskDeadline).toISOString(),
+                    status: taskStatus,
+                    description: taskDescription,
                     completed: false
                 });
             }
@@ -276,14 +317,14 @@
                 document.getElementById('taskName').value = task.name;
                 document.getElementById('taskDeadline').value = 
                     new Date(task.deadline).toISOString().slice(0, 16);
+                document.getElementById('taskStatus').value = task.status;
+                document.getElementById('taskDescription').value = task.description;
                 document.getElementById('submitBtn').textContent = 'Actualizar Tarea';
             }
         }
 
         // Eliminar tarea
         function deleteTask(id) {
-            if (defaultTaskIds.includes(id)) return;
-            
             const tasks = loadTasks().filter(t => t.id !== id);
             localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
             renderAdminTasks();
