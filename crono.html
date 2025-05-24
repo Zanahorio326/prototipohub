@@ -1,348 +1,193 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista de Tareas - Junio 2025</title>
-    <style>
-        /* Todos los estilos se mantienen igual */
-        :root {
-            --bg-color: #ffffff;
-            --text-color: #333333;
-            --task-bg: #f9f9f9;
-            --task-border: #3498db;
-            --hover-bg: #f0f0f0;
-            --completed-color: #2ecc71;
-            --expired-color: #e74c3c;
-            --countdown-normal: #2ecc71;
-            --countdown-urgent: #e74c3c;
-            --date-color: #7f8c8d;
-        }
-
-        .dark-mode {
-            --bg-color: #1a1a1a;
-            --text-color: #ffffff;
-            --task-bg: #2d2d2d;
-            --task-border: #4a90e2;
-            --hover-bg: #3d3d3d;
-            --completed-color: #27ae60;
-            --expired-color: #c0392b;
-            --countdown-normal: #27ae60;
-            --countdown-urgent: #c0392b;
-            --date-color: #95a5a6;
-        }
-
-        body {
-            font-family: 'Arial', sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: all 0.3s ease;
-        }
-
-        h1 {
-            color: var(--text-color);
-            text-align: center;
-            margin-bottom: 10px;
-            padding: 0 50px;
-        }
-
-        #liveClock {
-            text-align: center;
-            font-size: 1.2em;
-            color: var(--date-color);
-            margin-bottom: 30px;
-        }
-
-        .task-list {
-            list-style-type: none;
-            padding: 0;
-        }
-
-        .task-item {
-            background-color: var(--task-bg);
-            border-left: 4px solid var(--task-border);
-            margin-bottom: 10px;
-            padding: 15px 20px;
-            border-radius: 0 4px 4px 0;
-            transition: all 0.3s ease;
-        }
-
-        .task-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-        }
-
-        .task-details {
-            display: none;
-            padding: 15px 0 0 0;
-            margin-top: 10px;
-            border-top: 1px solid var(--date-color);
-        }
-
-        .task-name {
-            font-weight: bold;
-            flex-grow: 1;
-            margin-right: 15px;
-        }
-
-        .task-date {
-            color: var(--date-color);
-            font-size: 0.9em;
-            margin-right: 15px;
-            min-width: 120px;
-        }
-
-        .countdown {
-            color: var(--countdown-normal);
-            font-weight: bold;
-            min-width: 140px;
-            text-align: right;
-        }
-
-        .status-label {
-            font-size: 0.9em;
-            padding: 6px 12px;
-            border-radius: 15px;
-            margin-bottom: 10px;
-            display: inline-block;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
-
-        .status-en-pausa { background: #95a5a6; color: white; }
-        .status-en-conversacion { background: #3498db; color: white; }
-        .status-en-estudio { background: #9b59b6; color: white; }
-        .status-en-desarrollo { background: #f1c40f; color: black; }
-        .status-implementacion-testing { background: #e67e22; color: white; }
-        .status-en-el-mercado { background: #2ecc71; color: white; }
-        .status-en-observacion { background: #e74c3c; color: white; }
-
-        .task-info {
-            font-size: 0.9em;
-            color: var(--date-color);
-            line-height: 1.6;
-        }
-
-        .dark-mode-toggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: none;
-            border: none;
-            font-size: 1.5em;
-            cursor: pointer;
-            color: var(--text-color);
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 15px;
-            }
-
-            h1 {
-                font-size: 1.5em;
-                padding: 0 30px;
-            }
-
-            .task-header {
-                flex-wrap: wrap;
-            }
-
-            .task-name {
-                min-width: 100%;
-                margin-bottom: 8px;
-            }
-
-            .task-date, .countdown {
-                font-size: 0.8em;
-                min-width: auto;
-            }
-
-            .countdown {
-                text-align: left;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cronograma de Tareas</title>
+  <style>
+    :root {
+      --bg: #fff;
+      --fg: #000;
+      --card-bg: #f9f9f9;
+      --border-active: #3498db;
+      --border-completed: #2ecc71;
+      --border-expired: #e74c3c;
+      --text-muted: #7f8c8d;
+      --badge-bg-paused: #95a5a6;
+      --badge-bg-convo: #3498db;
+      --badge-bg-estudio: #9b59b6;
+      --badge-bg-dev: #f1c40f;
+      --badge-bg-test: #e67e22;
+      --badge-bg-mercado: #2ecc71;
+      --badge-bg-observ: #e74c3c;
+      --transition: 0.3s;
+    }
+    [data-theme="dark"] {
+      --bg: #121212;
+      --fg: #eee;
+      --card-bg: #1e1e1e;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      transition: var(--transition);
+    }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .toggle {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .clock {
+      text-align: center;
+      font-size: 20px;
+      margin-bottom: 20px;
+    }
+    .tasks {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .task-card {
+      background: var(--card-bg);
+      border-left: 5px solid var(--border-active);
+      padding: 15px;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transform: translateX(0);
+    }
+    .task-card:hover {
+      transform: translateX(5px);
+    }
+    .task-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .task-title {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .task-date {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    .task-countdown {
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .green { color: var(--border-completed); }
+    .red { color: var(--border-expired); }
+    .details {
+      display: none;
+      margin-top: 10px;
+      border-top: 1px solid var(--badge-bg-paused);
+      padding-top: 10px;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 14px;
+      padding: 6px 12px;
+      color: #fff;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    .paused { background: var(--badge-bg-paused); }
+    .convo { background: var(--badge-bg-convo); }
+    .estudio { background: var(--badge-bg-estudio); }
+    .dev { background: var(--badge-bg-dev); }
+    .test { background: var(--badge-bg-test); }
+    .mercado { background: var(--badge-bg-mercado); }
+    .observ { background: var(--badge-bg-observ); }
+    .description {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+  </style>
 </head>
 <body>
-    <button id="darkModeToggle" class="dark-mode-toggle">🌙</button>
-    <h1>Lista de Tareas - Junio 2025</h1>
-    <div id="liveClock"></div>
-    
-    <ul class="task-list" id="taskList"></ul>
+  <div class="toggle" id="theme-toggle">☀️</div>
+  <div class="clock" id="clock">Hora actual en Santiago: cargando...</div>
+  <div class="tasks">
+    <div class="task-card" data-deadline="2025-06-19" id="task1">
+      <div class="task-header">
+        <div>
+          <div class="task-title">Prototipo página web</div>
+          <div class="task-date">Fecha límite: 19/06/2025</div>
+        </div>
+        <div class="task-countdown" id="countdown1">calculando...</div>
+      </div>
+      <div class="details" id="details1">
+        <div class="badge dev">🟡 EN DESARROLLO</div>
+        <div class="description">Desarrollo del prototipo funcional base para la presentación inicial en el congreso.</div>
+      </div>
+    </div>
+  </div>
 
-    <script>
-        const TASKS_KEY = 'crono-tasks';
-        const defaultTasks = [
-            {
-                id: 'task-1',
-                name: 'Prototipo página web (funcionando)',
-                deadline: '2025-06-19T23:59:59-04:00',
-                completed: false,
-                status: 'en-desarrollo',
-                description: 'Desarrollo del prototipo funcional base'
-            },
-            {
-                id: 'task-2',
-                name: 'Propuesta reciclaje (funcionando)',
-                deadline: '2025-06-19T23:59:59-04:00',
-                completed: false,
-                status: 'en-conversacion',
-                description: 'Elaboración de propuesta técnica y económica'
-            },
-            {
-                id: 'task-3',
-                name: 'Presentación de propuestas',
-                deadline: '2025-06-21T23:59:59-04:00',
-                completed: false,
-                status: 'en-estudio',
-                description: 'Preparación de material de presentación'
-            },
-            {
-                id: 'task-4',
-                name: 'Coordinación de horario',
-                deadline: '2025-06-12T23:59:59-04:00',
-                completed: false,
-                status: 'en-pausa',
-                description: 'Sincronización de agendas del equipo'
-            }
-        ];
+  <script>
+    // Dark mode toggle
+    const toggle = document.getElementById('theme-toggle');
+    const root = document.documentElement;
+    let dark = false;
+    toggle.addEventListener('click', () => {
+      dark = !dark;
+      if (dark) {
+        root.setAttribute('data-theme', 'dark');
+        toggle.textContent = '🌙';
+      } else {
+        root.removeAttribute('data-theme');
+        toggle.textContent = '☀️';
+      }
+    });
 
-        // Inicializar almacenamiento
-        function initializeStorage() {
-            if (!localStorage.getItem(TASKS_KEY)) {
-                localStorage.setItem(TASKS_KEY, JSON.stringify(defaultTasks));
-            }
+    // Clock in Santiago
+    function updateClock() {
+      const opts = { timeZone: 'America/Santiago', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      const now = new Date().toLocaleString('es-CL', opts);
+      // Format: martes, 11 de junio de 2024, 15:23:47
+      document.getElementById('clock').textContent = 'Hora actual en Santiago: ' + now;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Countdown and color logic
+    function updateCountdown(id) {
+      const card = document.getElementById(id);
+      const deadline = new Date(card.dataset.deadline + 'T23:59:59');
+      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santiago' }));
+      const diff = (deadline - now) / (1000 * 60 * 60 * 24);
+      const countdownEl = document.getElementById('countdown' + id.slice(-1));
+      if (diff < 0) {
+        countdownEl.textContent = 'Tiempo expirado';
+        countdownEl.classList.add('red');
+        card.style.borderLeftColor = 'var(--border-expired)';
+      } else {
+        const days = Math.ceil(diff);
+        countdownEl.textContent = days + ' día' + (days > 1 ? 's' : '');
+        if (days > 3) {
+          countdownEl.classList.add('green');
+        } else {
+          countdownEl.classList.add('red');
         }
+      }
+    }
+    updateCountdown('task1');
 
-        // Dark Mode
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        const body = document.body;
-
-        function toggleDarkMode() {
-            body.classList.toggle('dark-mode');
-            localStorage.setItem('darkMode', body.classList.contains('dark-mode'));
-            darkModeToggle.textContent = body.classList.contains('dark-mode') ? '☀️' : '🌙';
-        }
-
-        darkModeToggle.addEventListener('click', toggleDarkMode);
-        
-        if (localStorage.getItem('darkMode') === 'true') {
-            body.classList.add('dark-mode');
-            darkModeToggle.textContent = '☀️';
-        }
-
-        // Reloj
-        function updateClock() {
-            const options = {
-                timeZone: 'America/Santiago',
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: 'numeric',
-                second: 'numeric'
-            };
-            const now = new Date().toLocaleString('es-CL', options);
-            document.getElementById('liveClock').innerHTML = `Hora actual en Santiago: ${now}`;
-        }
-
-        // Renderizar tareas
-        function renderTasks() {
-            const tasks = JSON.parse(localStorage.getItem(TASKS_KEY));
-            const taskList = document.getElementById('taskList');
-            
-            taskList.innerHTML = '';
-            
-            tasks.forEach(task => {
-                const taskItem = document.createElement('li');
-                taskItem.className = `task-item ${task.completed ? 'completed' : ''}`;
-                taskItem.setAttribute('data-deadline', task.deadline);
-                taskItem.setAttribute('data-id', task.id);
-                
-                const formattedDate = new Date(task.deadline)
-                    .toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit', year: 'numeric'});
-
-                taskItem.innerHTML = `
-                    <div class="task-header">
-                        <span class="task-name">${task.name}</span>
-                        <span class="task-date">Fecha límite: ${formattedDate}</span>
-                        <span class="countdown"></span>
-                    </div>
-                    <div class="task-details">
-                        <span class="status-label status-${task.status}">${task.status.replace(/-/g, ' ')}</span>
-                        <div class="task-info">${task.description}</div>
-                    </div>
-                `;
-
-                const header = taskItem.querySelector('.task-header');
-                const details = taskItem.querySelector('.task-details');
-                
-                header.addEventListener('click', () => {
-                    details.style.display = details.style.display === 'block' ? 'none' : 'block';
-                });
-
-                taskList.appendChild(taskItem);
-            });
-        }
-
-        // Contadores
-        function updateCountdowns() {
-            const now = new Date();
-            const tasks = Array.from(document.querySelectorAll('.task-item'));
-            
-            tasks.forEach(task => {
-                const deadline = new Date(task.dataset.deadline);
-                const timeDifference = deadline - now;
-                const countdown = task.querySelector('.countdown');
-
-                if (timeDifference < 0) {
-                    countdown.textContent = 'Tiempo expirado';
-                    countdown.style.color = 'var(--countdown-urgent)';
-                    task.classList.add('expired');
-                } else {
-                    const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
-                    
-                    countdown.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
-                    countdown.style.color = days < 3 ? 'var(--countdown-urgent)' : 'var(--countdown-normal)';
-                }
-            });
-
-            // Ordenar tareas
-            tasks.sort((a, b) => {
-                const aTime = new Date(a.dataset.deadline) - now;
-                const bTime = new Date(b.dataset.deadline) - now;
-                
-                if (aTime < 0 && bTime < 0) return 0;
-                if (aTime < 0) return 1;
-                if (bTime < 0) return -1;
-                return aTime - bTime;
-            });
-
-            const taskList = document.getElementById('taskList');
-            taskList.innerHTML = '';
-            tasks.forEach(task => taskList.appendChild(task));
-        }
-
-        // Inicialización
-        initializeStorage();
-        renderTasks();
-        updateClock();
-        updateCountdowns();
-        
-        setInterval(() => {
-            updateClock();
-            updateCountdowns();
-        }, 1000);
-    </script>
+    // Toggle details on click
+    document.getElementById('task1').addEventListener('click', () => {
+      const det = document.getElementById('details1');
+      det.style.display = det.style.display === 'block' ? 'none' : 'block';
+    });
+  </script>
 </body>
 </html>
