@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pendientes ÁGORA</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
     :root {
       --bg: #fff;
@@ -118,6 +120,19 @@
   <div id="tasks" class="tasks"></div>
 
   <script>
+    // Config Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDjNTIDifTSFdVRNyhrjbKkOqCPTb8ECfQ",
+      authDomain: "cronoagora.firebaseapp.com",
+      databaseURL: "https://cronoagora-default-rtdb.firebaseio.com",
+      projectId: "cronoagora",
+      storageBucket: "cronoagora.firebasestorage.app",
+      messagingSenderId: "1014360265947",
+      appId: "1:1014360265947:web:f62b885f53f29453f228fe"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const tasksRef = firebase.database().ref('tasks');
+
     // Tema con persistencia y animación
     const toggleBtn = document.getElementById('theme-toggle');
     const root = document.documentElement;
@@ -126,59 +141,37 @@
       if (dark) { root.setAttribute('data-theme', 'dark'); toggleBtn.textContent = '🌙'; }
       else { root.removeAttribute('data-theme'); toggleBtn.textContent = '☀️'; }
     }
-    function toggleTheme() {
-      dark = !dark;
-      localStorage.setItem('theme', dark ? 'dark' : 'light');
-      applyTheme();
-    }
     toggleBtn.addEventListener('click', () => {
-      const overlay = document.createElement('div'); overlay.className = 'theme-overlay';
-      overlay.style.background = dark ? '#fff' : '#121212'; document.body.appendChild(overlay);
+      const overlay = document.createElement('div'); overlay.className = 'theme-overlay'; overlay.style.background = dark ? '#fff' : '#121212'; document.body.appendChild(overlay);
       requestAnimationFrame(() => overlay.style.height = '100%');
-      overlay.addEventListener('transitionend', () => {
-        toggleTheme();
-        overlay.style.height = '0';
-        overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
-      }, { once: true });
+      overlay.addEventListener('transitionend', () => { dark = !dark; localStorage.setItem('theme', dark ? 'dark' : 'light'); applyTheme(); overlay.style.height = '0'; overlay.addEventListener('transitionend', () => overlay.remove(), { once: true }); }, { once: true });
     });
     applyTheme();
 
-    // Reloj en Santiago
+    // Reloj
     function updateClock() {
       const opts = { timeZone: 'America/Santiago', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
       document.getElementById('clock').textContent = 'Hora actual en Santiago: ' + new Date().toLocaleString('es-CL', opts);
     }
     setInterval(updateClock, 1000); updateClock();
 
-    // URL del JSON compartido
-    const TASKS_URL = 'https://zanahorio326.github.io/prototipohub/tasks.json';
-    let tasks = [];
+    // Render y lógica
     const container = document.getElementById('tasks');
+    function getBadgeEmoji(s) { return { paused:'🟦', convo:'🟪', estudio:'🟣', dev:'🟡', test:'🟠', mercado:'🟢', observ:'🔴' }[s]; }
+    function getBadgeText(s) { return { paused:'EN PAUSA', convo:'EN CONVERSACIÓN', estudio:'EN ESTUDIO', dev:'EN DESARROLLO', test:'TESTING', mercado:'EN MERCADO', observ:'EN OBSERVACIÓN' }[s]; }
 
-    async function loadTasks() {
-      try {
-        const res = await fetch(TASKS_URL);
-        tasks = await res.json();
-        renderTasks(); updateCountdowns();
-        setInterval(updateCountdowns, 60000);
-      } catch (e) {
-        console.error('Error cargando tareas:', e);
-        container.innerHTML = '<p style="color:red">No se pudo cargar tareas.</p>';
-      }
-    }
-
-    function renderTasks() {
+    function renderTasks(snapshot) {
       container.innerHTML = '';
-      tasks.forEach((t, i) => {
-        const card = document.createElement('div'); card.className = 'task-card';
-        card.dataset.deadline = t.deadline; card.id = 'task'+i;
+      snapshot.forEach(child => {
+        const t = child.val(); const i = child.key;
+        const card = document.createElement('div'); card.className = 'task-card'; card.dataset.deadline = t.deadline;
         card.innerHTML = `
           <div class="task-header">
             <div>
               <div class="task-title">${t.name}</div>
               <div class="task-date">Fecha límite: ${new Date(t.deadline).toLocaleDateString('es-CL')}</div>
             </div>
-            <div class="task-countdown" id="countdown${i}">calculando...</div>
+            <div class="task-countdown" id="countdown${i}">...</div>
           </div>
           <div class="details" id="details${i}">
             <div class="badge ${t.state}">${getBadgeEmoji(t.state)} ${getBadgeText(t.state)}</div>
@@ -190,29 +183,22 @@
           det.style.display = det.style.display==='block'?'none':'block';
         });
       });
+      updateCountdowns(snapshot);
     }
 
-    function getBadgeEmoji(s) {
-      return { paused:'🟦', convo:'🟪', estudio:'🟣', dev:'🟡', test:'🟠', mercado:'🟢', observ:'🔴' }[s];
-    }
-    function getBadgeText(s) {
-      return { paused:'EN PAUSA', convo:'EN CONVERSACIÓN', estudio:'EN ESTUDIO', dev:'EN DESARROLLO', test:'TESTING', mercado:'EN MERCADO', observ:'EN OBSERVACIÓN' }[s];
-    }
-
-    function updateCountdowns() {
-      tasks.forEach((_, i) => {
+    function updateCountdowns(snapshot) {
+      snapshot.forEach(child => {
+        const t = child.val(); const i = child.key;
         const card = document.getElementById('task'+i);
-        const deadline = new Date(card.dataset.deadline);
+        const el = document.getElementById('countdown'+i);
+        const deadline = new Date(t.deadline);
         const now = new Date(new Date().toLocaleString('en-US',{timeZone:'America/Santiago'}));
         const diff = deadline - now;
-        const el = document.getElementById('countdown'+i);
         el.classList.remove('red','green');
         if (diff<=0) {
-          el.textContent='Tiempo expirado'; card.style.borderLeftColor='var(--border-expired)'; el.classList.add('red');
+          el.textContent = 'Tiempo expirado'; card.style.borderLeftColor='var(--border-expired)'; el.classList.add('red');
         } else {
-          const d = Math.floor(diff/86400000);
-          const h = Math.floor((diff/3600000)%24);
-          const m = Math.floor((diff/60000)%60);
+          const d=Math.floor(diff/86400000), h=Math.floor((diff/3600000)%24), m=Math.floor((diff/60000)%60);
           el.textContent = `${d} día${d!==1?'s':''}, ${h}h ${m}m`;
           card.style.borderLeftColor='var(--border-active)';
           (diff/3600000>72?el.classList.add('green'):el.classList.add('red'));
@@ -220,7 +206,7 @@
       });
     }
 
-    loadTasks();
+    tasksRef.on('value', renderTasks);
   </script>
 </body>
 </html>
