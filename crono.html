@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de Tareas - Junio 2025</title>
     <style>
+        /* Todos los estilos se mantienen igual */
         :root {
             --bg-color: #ffffff;
             --text-color: #333333;
@@ -113,28 +114,6 @@
             font-weight: bold;
         }
 
-        .status-timeline {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            overflow-x: auto;
-        }
-
-        .status-item {
-            padding: 6px 12px;
-            border-radius: 15px;
-            font-size: 0.8em;
-            background: #ecf0f1;
-            color: #2c3e50;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .status-item.active {
-            background: #3498db;
-            color: white;
-        }
-
         .status-en-pausa { background: #95a5a6; color: white; }
         .status-en-conversacion { background: #3498db; color: white; }
         .status-en-estudio { background: #9b59b6; color: white; }
@@ -195,67 +174,52 @@
     <h1>Lista de Tareas - Junio 2025</h1>
     <div id="liveClock"></div>
     
-    <ul class="task-list" id="taskList">
-        <li class="task-item" data-deadline="2025-06-19T23:59:59-04:00">
-            <div class="task-header">
-                <span class="task-name">Prototipo página web (funcionando)</span>
-                <span class="task-date">Fecha límite: 19/06/2025</span>
-                <span class="countdown"></span>
-            </div>
-            <div class="task-details">
-                <span class="status-label status-en-desarrollo">Etapa: En desarrollo</span>
-                <div class="task-info">
-                    Desarrollo del prototipo funcional base con todas las características principales implementadas.
-                </div>
-            </div>
-        </li>
-
-        <li class="task-item" data-deadline="2025-06-19T23:59:59-04:00">
-            <div class="task-header">
-                <span class="task-name">Propuesta reciclaje (funcionando)</span>
-                <span class="task-date">Fecha límite: 19/06/2025</span>
-                <span class="countdown"></span>
-            </div>
-            <div class="task-details">
-                <span class="status-label status-en-conversacion">Etapa: En conversación</span>
-                <div class="task-info">
-                    Elaboración de propuesta técnica y económica para el plan de reciclaje comunitario.
-                </div>
-            </div>
-        </li>
-
-        <li class="task-item" data-deadline="2025-06-21T23:59:59-04:00">
-            <div class="task-header">
-                <span class="task-name">Presentación de propuestas</span>
-                <span class="task-date">Fecha límite: 21/06/2025</span>
-                <span class="countdown"></span>
-            </div>
-            <div class="task-details">
-                <span class="status-label status-en-estudio">Etapa: En estudio</span>
-                <div class="task-info">
-                    Preparación de material de presentación y coordinación con stakeholders clave.
-                </div>
-            </div>
-        </li>
-
-        <li class="task-item" data-deadline="2025-06-12T23:59:59-04:00">
-            <div class="task-header">
-                <span class="task-name">Coordinación de horario</span>
-                <span class="task-date">Fecha límite: 12/06/2025</span>
-                <span class="countdown"></span>
-            </div>
-            <div class="task-details">
-                <span class="status-label status-en-pausa">Etapa: En pausa</span>
-                <div class="task-info">
-                    Sincronización de agendas y coordinación de disponibilidad del equipo completo.
-                </div>
-            </div>
-        </li>
-    </ul>
+    <ul class="task-list" id="taskList"></ul>
 
     <script>
         const TASKS_KEY = 'crono-tasks';
-        
+        const defaultTasks = [
+            {
+                id: 'task-1',
+                name: 'Prototipo página web (funcionando)',
+                deadline: '2025-06-19T23:59:59-04:00',
+                completed: false,
+                status: 'en-desarrollo',
+                description: 'Desarrollo del prototipo funcional base'
+            },
+            {
+                id: 'task-2',
+                name: 'Propuesta reciclaje (funcionando)',
+                deadline: '2025-06-19T23:59:59-04:00',
+                completed: false,
+                status: 'en-conversacion',
+                description: 'Elaboración de propuesta técnica y económica'
+            },
+            {
+                id: 'task-3',
+                name: 'Presentación de propuestas',
+                deadline: '2025-06-21T23:59:59-04:00',
+                completed: false,
+                status: 'en-estudio',
+                description: 'Preparación de material de presentación'
+            },
+            {
+                id: 'task-4',
+                name: 'Coordinación de horario',
+                deadline: '2025-06-12T23:59:59-04:00',
+                completed: false,
+                status: 'en-pausa',
+                description: 'Sincronización de agendas del equipo'
+            }
+        ];
+
+        // Inicializar almacenamiento
+        function initializeStorage() {
+            if (!localStorage.getItem(TASKS_KEY)) {
+                localStorage.setItem(TASKS_KEY, JSON.stringify(defaultTasks));
+            }
+        }
+
         // Dark Mode
         const darkModeToggle = document.getElementById('darkModeToggle');
         const body = document.body;
@@ -287,6 +251,45 @@
             };
             const now = new Date().toLocaleString('es-CL', options);
             document.getElementById('liveClock').innerHTML = `Hora actual en Santiago: ${now}`;
+        }
+
+        // Renderizar tareas
+        function renderTasks() {
+            const tasks = JSON.parse(localStorage.getItem(TASKS_KEY));
+            const taskList = document.getElementById('taskList');
+            
+            taskList.innerHTML = '';
+            
+            tasks.forEach(task => {
+                const taskItem = document.createElement('li');
+                taskItem.className = `task-item ${task.completed ? 'completed' : ''}`;
+                taskItem.setAttribute('data-deadline', task.deadline);
+                taskItem.setAttribute('data-id', task.id);
+                
+                const formattedDate = new Date(task.deadline)
+                    .toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit', year: 'numeric'});
+
+                taskItem.innerHTML = `
+                    <div class="task-header">
+                        <span class="task-name">${task.name}</span>
+                        <span class="task-date">Fecha límite: ${formattedDate}</span>
+                        <span class="countdown"></span>
+                    </div>
+                    <div class="task-details">
+                        <span class="status-label status-${task.status}">${task.status.replace(/-/g, ' ')}</span>
+                        <div class="task-info">${task.description}</div>
+                    </div>
+                `;
+
+                const header = taskItem.querySelector('.task-header');
+                const details = taskItem.querySelector('.task-details');
+                
+                header.addEventListener('click', () => {
+                    details.style.display = details.style.display === 'block' ? 'none' : 'block';
+                });
+
+                taskList.appendChild(taskItem);
+            });
         }
 
         // Contadores
@@ -330,15 +333,9 @@
             tasks.forEach(task => taskList.appendChild(task));
         }
 
-        // Manejar clic para expandir/colapsar
-        document.querySelectorAll('.task-header').forEach(header => {
-            header.addEventListener('click', function() {
-                const details = this.nextElementSibling;
-                details.style.display = details.style.display === 'block' ? 'none' : 'block';
-            });
-        });
-
         // Inicialización
+        initializeStorage();
+        renderTasks();
         updateClock();
         updateCountdowns();
         
