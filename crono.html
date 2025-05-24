@@ -155,31 +155,38 @@
     <h1>Lista de Tareas - Junio 2025</h1>
     <div id="liveClock"></div>
     
-    <ul class="task-list" id="taskList">
-        <li class="task-item" data-deadline="2025-06-19T23:59:59-04:00">
-            <span class="task-name">Prototipo página web (funcionando)</span>
-            <span class="task-date">Fecha límite: 19/06/2025</span>
-            <span class="countdown"></span>
-        </li>
-        <li class="task-item" data-deadline="2025-06-19T23:59:59-04:00">
-            <span class="task-name">Propuesta reciclaje (funcionando)</span>
-            <span class="task-date">Fecha límite: 19/06/2025</span>
-            <span class="countdown"></span>
-        </li>
-        <li class="task-item" data-deadline="2025-06-21T23:59:59-04:00">
-            <span class="task-name">Presentación de propuestas</span>
-            <span class="task-date">Fecha límite: 21/06/2025</span>
-            <span class="countdown"></span>
-        </li>
-        <li class="task-item" data-deadline="2025-06-12T23:59:59-04:00">
-            <span class="task-name">Coordinación de horario</span>
-            <span class="task-date">Fecha límite: 12/06/2025</span>
-            <span class="countdown"></span>
-        </li>
-    </ul>
+    <ul class="task-list" id="taskList"></ul>
 
     <script>
-        // Modo oscuro
+        const TASKS_KEY = 'crono-tasks';
+        const defaultTasks = [
+            {
+                id: 'task-1',
+                name: 'Prototipo página web (funcionando)',
+                deadline: '2025-06-19T23:59:59-04:00',
+                completed: false
+            },
+            {
+                id: 'task-2',
+                name: 'Propuesta reciclaje (funcionando)',
+                deadline: '2025-06-19T23:59:59-04:00',
+                completed: false
+            },
+            {
+                id: 'task-3',
+                name: 'Presentación de propuestas',
+                deadline: '2025-06-21T23:59:59-04:00',
+                completed: false
+            },
+            {
+                id: 'task-4',
+                name: 'Coordinación de horario',
+                deadline: '2025-06-12T23:59:59-04:00',
+                completed: false
+            }
+        ];
+
+        // Dark Mode
         const darkModeToggle = document.getElementById('darkModeToggle');
         const body = document.body;
 
@@ -191,13 +198,19 @@
 
         darkModeToggle.addEventListener('click', toggleDarkMode);
         
-        // Cargar preferencia de modo oscuro
         if (localStorage.getItem('darkMode') === 'true') {
             body.classList.add('dark-mode');
             darkModeToggle.textContent = '☀️';
         }
 
-        // Reloj en tiempo real
+        // Almacenamiento
+        function initializeStorage() {
+            if (!localStorage.getItem(TASKS_KEY)) {
+                localStorage.setItem(TASKS_KEY, JSON.stringify(defaultTasks));
+            }
+        }
+
+        // Reloj
         function updateClock() {
             const options = {
                 timeZone: 'America/Santiago',
@@ -213,7 +226,43 @@
             document.getElementById('liveClock').innerHTML = `Hora actual en Santiago: ${now}`;
         }
 
-        // Actualizar y ordenar tareas
+        // Renderizar tareas
+        function renderTasks() {
+            const tasks = JSON.parse(localStorage.getItem(TASKS_KEY));
+            const taskList = document.getElementById('taskList');
+            
+            taskList.innerHTML = '';
+            
+            tasks.forEach(task => {
+                const taskItem = document.createElement('li');
+                taskItem.className = `task-item ${task.completed ? 'completed' : ''}`;
+                taskItem.setAttribute('data-deadline', task.deadline);
+                taskItem.setAttribute('data-id', task.id);
+                
+                const formattedDate = new Date(task.deadline)
+                    .toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit', year: 'numeric'});
+
+                taskItem.innerHTML = `
+                    <span class="task-name">${task.name}</span>
+                    <span class="task-date">Fecha límite: ${formattedDate}</span>
+                    <span class="countdown"></span>
+                `;
+                
+                taskItem.addEventListener('click', function() {
+                    task.completed = !task.completed;
+                    const tasks = JSON.parse(localStorage.getItem(TASKS_KEY));
+                    const updatedTasks = tasks.map(t => 
+                        t.id === task.id ? {...t, completed: task.completed} : t
+                    );
+                    localStorage.setItem(TASKS_KEY, JSON.stringify(updatedTasks));
+                    this.classList.toggle('completed');
+                });
+                
+                taskList.appendChild(taskItem);
+            });
+        }
+
+        // Contadores
         function updateCountdowns() {
             const now = new Date();
             const tasks = Array.from(document.querySelectorAll('.task-item'));
@@ -255,45 +304,15 @@
         }
 
         // Inicialización
+        initializeStorage();
+        renderTasks();
         updateClock();
         updateCountdowns();
+        
         setInterval(() => {
             updateClock();
             updateCountdowns();
         }, 1000);
-
-        // Marcar tareas como completadas
-        document.querySelectorAll('.task-item').forEach(item => {
-            item.addEventListener('click', function() {
-                this.classList.toggle('completed');
-            });
-        });
     </script>
-    <!-- Agrega esto al final de crono.html antes del </body> -->
-<script>
-    // Cargar configuración
-    window.addEventListener('DOMContentLoaded', () => {
-        window.parent.postMessage({ type: 'REQUEST_CONFIG' }, '*');
-    });
-
-    window.addEventListener('message', (e) => {
-        if(e.data?.type === 'CONFIG_DATA') {
-            const config = e.data.config;
-            
-            // Aplicar configuración
-            document.title = config.title;
-            document.documentElement.style.setProperty('--color-primario', config.primaryColor);
-            document.documentElement.style.setProperty('--color-secundario', config.secondaryColor);
-            
-            // Ocultar/mostrar herramientas
-            document.querySelectorAll('.tool').forEach(tool => {
-                const toolType = tool.dataset.type || 
-                               (tool.id === 'iframeFondo' ? 'background' : 
-                               (tool.id === 'iframeBoton' ? 'button' : null));
-                tool.style.display = config.activeTools?.includes(toolType) ? 'flex' : 'none';
-            });
-        }
-    });
-</script>
 </body>
 </html>
