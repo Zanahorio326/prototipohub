@@ -27,11 +27,7 @@
       --fg: #eee;
       --card-bg: #1e1e1e;
     }
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: var(--bg);
       color: var(--fg);
@@ -56,23 +52,15 @@
       gap: 10px;
       text-align: center;
       margin-bottom: 20px;
-      width: 100%;
-      max-width: 600px;
+      width: 100%; max-width: 600px;
     }
-    .header h1 {
-      font-size: 28px;
-      font-weight: bold;
-    }
-    .clock {
-      font-size: 20px;
-      color: var(--fg);
-    }
+    .header h1 { font-size: 28px; font-weight: bold; }
+    .clock { font-size: 20px; }
     .tasks {
       display: grid;
       grid-template-columns: 1fr;
       gap: 15px;
-      width: 100%;
-      max-width: 600px;
+      width: 100%; max-width: 600px;
     }
     .task-card {
       background: var(--card-bg);
@@ -84,27 +72,13 @@
       transform: translateX(0);
       transition: transform var(--transition), border-color var(--transition);
     }
-    .task-card:hover {
-      transform: translateX(5px);
-    }
+    .task-card:hover { transform: translateX(5px); }
     .task-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
     }
-    .task-title {
-      font-size: 18px;
-      font-weight: bold;
-    }
-    .task-date {
-      font-size: 14px;
-      color: var(--text-muted);
-    }
-    .task-countdown {
-      font-size: 14px;
-      font-weight: bold;
-    }
+    .task-title { font-size: 18px; font-weight: bold; }
+    .task-date { font-size: 14px; color: var(--text-muted); }
+    .task-countdown { font-size: 14px; font-weight: bold; }
     .green { color: var(--border-completed); }
     .red { color: var(--border-expired); }
     .details {
@@ -128,18 +102,9 @@
     .test { background: var(--badge-bg-test); }
     .mercado { background: var(--badge-bg-mercado); }
     .observ { background: var(--badge-bg-observ); }
-    .description {
-      color: var(--text-muted);
-      font-size: 14px;
-      line-height: 1.6;
-    }
+    .description { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
     .theme-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 0;
-      z-index: 1000;
+      position: fixed; top: 0; left: 0; width: 100%; height: 0; z-index: 1000;
       transition: height var(--transition) ease;
     }
   </style>
@@ -150,52 +115,28 @@
     <h1>Pendientes ÁGORA</h1>
     <div class="clock" id="clock">Hora actual en Santiago: cargando...</div>
   </div>
-  <div class="tasks">
-    <div class="task-card" data-deadline="2025-06-19T23:59:59" id="task1">
-      <div class="task-header">
-        <div>
-          <div class="task-title">Prototipo página web</div>
-          <div class="task-date">Fecha límite: 19/06/2025</div>
-        </div>
-        <div class="task-countdown" id="countdown1">calculando...</div>
-      </div>
-      <div class="details" id="details1">
-        <div class="badge dev">🟡 EN DESARROLLO</div>
-        <div class="description">Desarrollo del prototipo funcional base para la presentación inicial en el congreso.</div>
-      </div>
-    </div>
-  </div>
+  <div id="tasks" class="tasks"></div>
 
   <script>
-    // Manejo de tema con animación de barrido
+    // Gestión de tema con persistencia y animación
     const toggleBtn = document.getElementById('theme-toggle');
     const root = document.documentElement;
     let dark = localStorage.getItem('theme') === 'dark';
     function applyTheme() {
-      if (dark) {
-        root.setAttribute('data-theme', 'dark');
-        toggleBtn.textContent = '🌙';
-      } else {
-        root.removeAttribute('data-theme');
-        toggleBtn.textContent = '☀️';
-      }
+      if (dark) { root.setAttribute('data-theme', 'dark'); toggleBtn.textContent = '🌙'; }
+      else { root.removeAttribute('data-theme'); toggleBtn.textContent = '☀️'; }
     }
-    function performToggle() {
+    function toggleTheme() {
       dark = !dark;
       localStorage.setItem('theme', dark ? 'dark' : 'light');
       applyTheme();
     }
     toggleBtn.addEventListener('click', () => {
-      // Crear overlay
-      const overlay = document.createElement('div');
-      overlay.className = 'theme-overlay';
-      overlay.style.background = dark ? '#fff' : '#121212';
-      document.body.appendChild(overlay);
-      // Barrido hacia abajo
+      const overlay = document.createElement('div'); overlay.className = 'theme-overlay';
+      overlay.style.background = dark ? '#fff' : '#121212'; document.body.appendChild(overlay);
       requestAnimationFrame(() => overlay.style.height = '100%');
       overlay.addEventListener('transitionend', () => {
-        performToggle();
-        // Barrido hacia arriba
+        toggleTheme();
         overlay.style.height = '0';
         overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
       }, { once: true });
@@ -205,44 +146,79 @@
     // Reloj en Santiago
     function updateClock() {
       const opts = { timeZone: 'America/Santiago', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-      const nowStr = new Date().toLocaleString('es-CL', opts);
-      document.getElementById('clock').textContent = 'Hora actual en Santiago: ' + nowStr;
+      document.getElementById('clock').textContent = 'Hora actual en Santiago: ' + new Date().toLocaleString('es-CL', opts);
     }
-    setInterval(updateClock, 1000);
-    updateClock();
+    setInterval(updateClock, 1000); updateClock();
 
-    // Contador con días, horas, minutos
-    function updateCountdown(id) {
-      const card = document.getElementById(id);
-      const deadline = new Date(card.dataset.deadline);
-      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santiago' }));
-      const diffMs = deadline - now;
-      const countdownEl = document.getElementById('countdown' + id.slice(-1));
-      if (diffMs <= 0) {
-        countdownEl.textContent = 'Tiempo expirado';
-        countdownEl.classList.add('red');
-        card.style.borderLeftColor = 'var(--border-expired)';
-      } else {
-        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
-        const minutes = Math.floor((diffMs / (1000 * 60)) % 60);
-        countdownEl.textContent = `${days} día${days!==1?'s':''}, ${hours}h ${minutes}m`;
-        card.style.borderLeftColor = 'var(--border-active)';
-        const totalHours = diffMs / (1000 * 60 * 60);
-        if (totalHours > 72) {
-          countdownEl.classList.add('green');
+    // Carga y render de tareas
+    let tasks = JSON.parse(localStorage.getItem('agora_tasks') || '[]');
+    if (!tasks.length) {
+      tasks = [{
+        name: 'Prototipo página web',
+        deadline: '2025-06-19T23:59:59',
+        state: 'dev',
+        desc: 'Desarrollo del prototipo funcional base para la presentación inicial en el congreso.'
+      }];
+      localStorage.setItem('agora_tasks', JSON.stringify(tasks));
+    }
+    const container = document.getElementById('tasks');
+
+    function renderTasks() {
+      container.innerHTML = '';
+      tasks.forEach((t, i) => {
+        const card = document.createElement('div'); card.className = 'task-card';
+        card.dataset.deadline = t.deadline; card.id = 'task'+i;
+        // Borde según expirado o no se asigna después
+        card.innerHTML = `
+          <div class="task-header">
+            <div>
+              <div class="task-title">${t.name}</div>
+              <div class="task-date">Fecha límite: ${new Date(t.deadline).toLocaleDateString('es-CL')}</div>
+            </div>
+            <div class="task-countdown" id="countdown${i}">calculando...</div>
+          </div>
+          <div class="details" id="details${i}">
+            <div class="badge ${t.state}">${getBadgeEmoji(t.state)} ${getBadgeText(t.state)}</div>
+            <div class="description">${t.desc}</div>
+          </div>`;
+        container.appendChild(card);
+        card.addEventListener('click', () => {
+          const det = document.getElementById('details'+i);
+          det.style.display = det.style.display==='block'?'none':'block';
+        });
+      });
+    }
+
+    function getBadgeEmoji(s) {
+      return { paused:'🟦', convo:'🟪', estudio:'🟣', dev:'🟡', test:'🟠', mercado:'🟢', observ:'🔴' }[s];
+    }
+    function getBadgeText(s) {
+      return { paused:'EN PAUSA', convo:'EN CONVERSACIÓN', estudio:'EN ESTUDIO', dev:'EN DESARROLLO', test:'TESTING', mercado:'EN MERCADO', observ:'EN OBSERVACIÓN' }[s];
+    }
+
+    function updateCountdowns() {
+      tasks.forEach((_, i) => {
+        const card = document.getElementById('task'+i);
+        const deadline = new Date(card.dataset.deadline);
+        const now = new Date(new Date().toLocaleString('en-US',{timeZone:'America/Santiago'}));
+        const diff = deadline - now;
+        const el = document.getElementById('countdown'+i);
+        el.classList.remove('red','green');
+        if (diff<=0) {
+          el.textContent='Tiempo expirado'; card.style.borderLeftColor='var(--border-expired)'; el.classList.add('red');
         } else {
-          countdownEl.classList.add('red');
+          const d = Math.floor(diff/86400000);
+          const h = Math.floor((diff/3600000)%24);
+          const m = Math.floor((diff/60000)%60);
+          el.textContent = `${d} día${d!==1?'s':''}, ${h}h ${m}m`;
+          card.style.borderLeftColor='var(--border-active)';
+          (diff/3600000>72?el.classList.add('green'):el.classList.add('red'));
         }
-      }
+      });
     }
-    updateCountdown('task1');
 
-    // Mostrar/ocultar detalles
-    document.getElementById('task1').addEventListener('click', () => {
-      const det = document.getElementById('details1');
-      det.style.display = det.style.display === 'block' ? 'none' : 'block';
-    });
+    renderTasks(); updateCountdowns();
+    setInterval(updateCountdowns, 60000);
   </script>
 </body>
 </html>
