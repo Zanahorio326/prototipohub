@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin ÁGORA</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
     :root { --bg:#f5f5f5; --fg:#333; --panel-bg:#fff; --input-bg:#fff; --border:#ccc; --shadow:rgba(0,0,0,0.1); --btn-save:#2ecc71; --btn-delete:#e74c3c; --transition:0.3s; }
     [data-theme="dark"] { --bg:#121212; --fg:#eee; --panel-bg:#1e1e1e; --input-bg:#2a2a2a; --border:#444; --shadow:rgba(0,0,0,0.5); }
@@ -57,6 +59,19 @@
   </div>
 
   <script>
+    // Configuración Firebase (no usar antes)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDjNTIDifTSFdVRNyhrjbKkOqCPTb8ECfQ",
+      authDomain: "cronoagora.firebaseapp.com",
+      databaseURL: "https://cronoagora-default-rtdb.firebaseio.com",
+      projectId: "cronoagora",
+      storageBucket: "cronoagora.firebasestorage.app",
+      messagingSenderId: "1014360265947",
+      appId: "1:1014360265947:web:f62b885f53f29453f228fe"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const tasksRef = firebase.database().ref('tasks');
+
     // Tema persistente
     const toggleBtn = document.getElementById('theme-toggle');
     const root = document.documentElement;
@@ -68,84 +83,69 @@
     toggleBtn.onclick = () => { dark = !dark; localStorage.setItem('admin_theme', dark?'dark':'light'); applyTheme(); };
     applyTheme();
 
-    // Config GitHub
-    const GITHUB_TOKEN = '<TU_TOKEN_AQUI>';
-    const REPO = 'zanahorio326/prototipohub';
-    const FILE_PATH = 'tasks.json';
-    const BRANCH = 'main';
-    const API_URL = `https://api.github.com/repos/${REPO}/contents/${FILE_PATH}`;
-
-    // Gestion de tareas local
-    let tasks = [];
     const form = document.getElementById('task-form');
     const listEl = document.getElementById('task-list');
-    let editIndex = null;
+    let editKey = null;
 
-    async function loadFromGitHub() {
-      const res = await fetch(API_URL + `?ref=${BRANCH}`);
-      const data = await res.json();
-      const content = atob(data.content.replace(/\n/g,''));
-      tasks = JSON.parse(content);
-      renderList();
-      window.sha = data.sha;
+    function getStateText(s) {
+      return { paused:'En pausa', convo:'En conversación', estudio:'En estudio', dev:'En desarrollo', test:'Testing', mercado:'En el mercado', observ:'En observación' }[s]||'';
     }
 
-    async function saveToGitHub() {
-      const content = btoa(JSON.stringify(tasks, null, 2));
-      const body = { message: 'Actualiza tareas', content, sha: window.sha, branch: BRANCH };
-      await fetch(API_URL, {
-        method: 'PUT',
-        headers: { Authorization: `token ${GITHUB_TOKEN}`, 'Content-Type':'application/json' },
-        body: JSON.stringify(body)
-      });
-      await loadFromGitHub();
-    }
-
-    function renderList() {
-      listEl.innerHTML='';
-      tasks.forEach((t,i)=>{
-        const item=document.createElement('div'); item.className='task-item';
-        const name=document.createElement('span');
-        name.textContent=`${t.name} (${new Date(t.deadline).toLocaleDateString('es-CL')}, ${getStateText(t.state)})`;
-        const editBtn=document.createElement('button'); editBtn.textContent='✏️'; editBtn.onclick=()=>startEdit(i);
-        const delBtn=document.createElement('button'); delBtn.textContent='🗑️'; delBtn.className='btn-delete'; delBtn.onclick=()=>deleteTask(i);
-        item.append(name,editBtn,delBtn);
+    function renderList(snapshot) {
+      listEl.innerHTML = '';
+      snapshot.forEach(child => {
+        const t = child.val();
+        const key = child.key;
+        const item = document.createElement('div'); item.className = 'task-item';
+        const name = document.createElement('span');
+        name.textContent = `${t.name} (${new Date(t.deadline).toLocaleDateString('es-CL')}, ${getStateText(t.state)})`;
+        const editBtn = document.createElement('button'); editBtn.textContent = '✏️'; editBtn.onclick = () => startEdit(key, t);
+        const delBtn = document.createElement('button'); delBtn.textContent = '🗑️'; delBtn.className = 'btn-delete'; delBtn.onclick = () => deleteTask(key);
+        item.append(name, editBtn, delBtn);
         listEl.appendChild(item);
       });
     }
 
-    function startEdit(i) {
-      editIndex=i;
-      const t=tasks[i];
-      document.getElementById('form-title').textContent='Editar Tarea';
-      form.name.value=t.name; form.date.value=t.deadline.slice(0,10);
-      form.state.value=t.state; form.desc.value=t.desc;
-      document.getElementById('save-btn').textContent='Actualizar';
-      document.getElementById('cancel-btn').style.display='inline-block';
+    function startEdit(key, t) {
+      editKey = key;
+      document.getElementById('form-title').textContent = 'Editar Tarea';
+      form.name.value = t.name;
+      form.date.value = t.deadline.slice(0,10);
+      form.state.value = t.state;
+      form.desc.value = t.desc;
+      document.getElementById('save-btn').textContent = 'Actualizar';
+      document.getElementById('cancel-btn').style.display = 'inline-block';
     }
-    function cancelEdit(){ editIndex=null; form.reset(); document.getElementById('form-title').textContent='Nueva Tarea'; document.getElementById('save-btn').textContent='Guardar'; document.getElementById('cancel-btn').style.display='none'; }
-    function getStateText(s){ return {paused:'En pausa',convo:'En conversación',estudio:'En estudio',dev:'En desarrollo',test:'Testing',mercado:'En el mercado',observ:'En observación'}[s]||''; }
 
-    form.onsubmit = async e => {
+    function cancelEdit() {
+      editKey = null;
+      form.reset();
+      document.getElementById('form-title').textContent = 'Nueva Tarea';
+      document.getElementById('save-btn').textContent = 'Guardar';
+      document.getElementById('cancel-btn').style.display = 'none';
+    }
+
+    function deleteTask(key) {
+      if (confirm('¿Eliminar esta tarea?')) tasksRef.child(key).remove();
+    }
+
+    form.addEventListener('submit', e => {
       e.preventDefault();
-      const name=form.name.value.trim(); const date=form.date.value; const state=form.state.value; const desc=form.desc.value.trim();
-      if(!name||!date||!state||!desc){ alert('Completa todos los campos.'); return; }
-      const t={ name, deadline: date+'T23:59:59', state, desc };
-      if(editIndex===null) tasks.push(t); else tasks[editIndex]=t;
-      cancelEdit(); renderList(); await saveToGitHub();
-    };
+      const t = {
+        name: form.name.value.trim(),
+        deadline: form.date.value + 'T23:59:59',
+        state: form.state.value,
+        desc: form.desc.value.trim()
+      };
+      if (!t.name || !t.deadline || !t.state || !t.desc) return alert('Completa todos los campos.');
+      if (editKey) tasksRef.child(editKey).set(t);
+      else tasksRef.push(t);
+      cancelEdit();
+    });
     document.getElementById('cancel-btn').onclick = cancelEdit;
 
-    async function deleteTask(i) {
-      if(confirm('¿Eliminar esta tarea?')){
-        tasks.splice(i,1);
-        renderList();
-        await saveToGitHub();
-      }
-    }
-
-    // Inicializa
-    loadFromGitHub();
+    // Escucha en tiempo real
+    tasksRef.on('value', renderList);
   </script>
 </body>
 </html>
