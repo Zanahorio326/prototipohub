@@ -2,131 +2,110 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Módulo Botón</title>
   <style>
-    /* Estilos del panel de edición de botón */
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      background: #f9f9f9;
-    }
-    .panel-wrapper {
-      width: 300px;
-      padding: 20px;
-      background: white;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    .panel-wrapper h1 {
-      margin: 0 0 16px;
-      font-size: 18px;
-      text-align: center;
-    }
-    .button-tools {
-      display: block; /* Mostrar siempre para verificar la UI */
-    }
-    .button-tools label {
-      font-size: 14px;
-      margin-top: 4px;
-      display: block;
-    }
-    .button-tools input,
-    .button-tools select {
-      display: block;
-      margin-bottom: 8px;
-      width: 100%;
-      padding: 4px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-    .button-tools button {
-      margin-top: 12px;
-      width: 100%;
-      padding: 8px;
-      border: none;
-      background: #007bff;
-      color: white;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .button-tools button:hover {
-      background: #0056b3;
-    }
+    * { box-sizing: border-box; }
+    body { margin:0; display:flex; align-items:center; justify-content:center; height:100vh; background:transparent; }
+    .tool { display:inline-flex; align-items:center; justify-content:center; width:80px; height:40px; background:white; border:1px solid #ccc; cursor:pointer; user-select:none; }
+    /* Panel y bloques se inyectan con clases idénticas al index */
   </style>
 </head>
 <body>
-  <div class="panel-wrapper">
-    <h1>Módulo Botón</h1>
-    <!-- Panel de configuración del botón -->
-    <div class="button-tools" id="buttonTools">
-      <label>Texto del botón:<input type="text" id="btnTextInput" placeholder="Texto..."/></label>
-      <label>Enlace URL:<input type="text" id="btnUrlInput" placeholder="https://..."/></label>
-      <label>Color de fondo:<input type="color" id="btnBgInput" value="#cccccc"/></label>
-      <label>Forma:
-        <select id="btnShapeSelect">
-          <option value="rectangular">Rectangular</option>
-          <option value="redondeada">Redondeada</option>
-          <option value="circular">Circular</option>
-          <option value="rombo">Rombo</option>
-        </select>
-      </label>
-      <button id="btnApply">Aplicar</button>
-    </div>
-  </div>
+  <div class="tool" id="buttonTool">🔘 Botón</div>
 
   <script>
-    // Referencias a los controles
-    const buttonTools   = document.getElementById('buttonTools');
-    const btnTextInput  = document.getElementById('btnTextInput');
-    const btnUrlInput   = document.getElementById('btnUrlInput');
-    const btnBgInput    = document.getElementById('btnBgInput');
-    const btnShapeSelect= document.getElementById('btnShapeSelect');
-    const btnApply      = document.getElementById('btnApply');
+  (function(){
+    const tool = document.getElementById('buttonTool');
+    const pdoc = window.parent.document;
+    let currentButton, currentBlock;
 
-    // Datos del botón que se está editando
-    let currentData = { id: null, text: '', url: '', bg: '#ffffff', shape: 'rectangular' };
+    // Crear panel de configuración en padre
+    const panel = pdoc.createElement('div');
+    panel.className = 'button-tools';
+    panel.id = 'moduleButtonTools';
+    panel.style.position = 'absolute'; panel.style.display = 'none';
+    panel.innerHTML = `
+      <label>Texto del botón:<input type="text" id="modBtnText"></label>
+      <label>Enlace URL:<input type="text" id="modBtnUrl"></label>
+      <label>Color de fondo:<input type="color" id="modBtnBg"></label>
+      <label>Forma:<select id="modBtnShape">
+        <option value="rectangular">Rectangular</option>
+        <option value="redondeada">Redondeada</option>
+        <option value="circular">Circular</option>
+        <option value="rombo">Rombo</option>
+      </select></label>
+      <button id="modBtnApply">Aplicar</button>
+    `;
+    pdoc.body.appendChild(panel);
 
-    // Notificar al padre que está listo
-    parent.postMessage({ type: 'moduleButtonReady' }, '*');
+    const txtInput = panel.querySelector('#modBtnText');
+    const urlInput = panel.querySelector('#modBtnUrl');
+    const bgInput = panel.querySelector('#modBtnBg');
+    const shapeSelect = panel.querySelector('#modBtnShape');
+    const applyBtn = panel.querySelector('#modBtnApply');
 
-    // Escucha mensajes desde la página padre
-    window.addEventListener('message', e => {
-      const data = e.data;
-      if (!data || data.type !== 'openButtonTools') return;
-      // Guardamos el estado actual
-      currentData = { ...data };
-      // Rellenamos los controles con los valores recibidos
-      btnTextInput.value   = data.text;
-      btnUrlInput.value    = data.url;
-      btnBgInput.value     = data.bg;
-      btnShapeSelect.value = data.shape;
+    tool.addEventListener('click', ()=> addBlock(30,30));
 
-      // Asegurarnos de que el panel está visible
-      buttonTools.style.display = 'block';
+    function addBlock(x,y){
+      const canvas = pdoc.getElementById('canvas');
+      const blk = pdoc.createElement('div'); blk.className='block';
+      blk.style.left = x+'px'; blk.style.top = y+'px';
+      const btn = pdoc.createElement('button');
+      btn.textContent='Botón'; btn.dataset.url=''; btn.style.cursor='pointer';
+      btn.addEventListener('click', e=>{
+        e.stopPropagation(); if(btn.dataset.url) window.open(btn.dataset.url,'_blank');
+      });
+      blk.appendChild(btn);
+      makeMovable(blk);
+      blk.addEventListener('click', e=>{ e.stopPropagation(); openTools(btn,blk); });
+      canvas.appendChild(blk);
+    }
+
+    function openTools(btn,blk){
+      currentButton=btn; currentBlock=blk;
+      const rect = blk.getBoundingClientRect();
+      panel.style.top = (rect.bottom+8)+'px'; panel.style.left = rect.left+'px';
+      panel.style.display='block';
+      txtInput.value = btn.textContent;
+      urlInput.value = btn.dataset.url;
+      bgInput.value = rgbToHex(btn.style.backgroundColor)||'#ffffff';
+      shapeSelect.value = getShape(btn);
+    }
+
+    applyBtn.addEventListener('click', ()=>{
+      if(!currentButton) return;
+      currentButton.textContent = txtInput.value;
+      currentButton.dataset.url = urlInput.value;
+      currentButton.style.background = bgInput.value;
+      applyShape(currentButton, shapeSelect.value);
+      panel.style.display='none';
     });
 
-    // Al aplicar, enviamos los nuevos valores al padre y ocultamos
-    btnApply.addEventListener('click', () => {
-      const response = {
-        type:  'applyButtonTools',
-        id:    currentData.id,
-        text:  btnTextInput.value,
-        url:   btnUrlInput.value,
-        bg:    btnBgInput.value,
-        shape: btnShapeSelect.value
-      };
-      parent.postMessage(response, '*');
-      // Ocultar tras aplicar
-      buttonTools.style.display = 'none';
-    });
+    function getShape(btn){
+      const br = pdoc.defaultView.getComputedStyle(btn).borderRadius;
+      const tf = pdoc.defaultView.getComputedStyle(btn).transform;
+      if(tf.includes('45')) return 'rombo';
+      if(br==='50%') return 'circular';
+      if(br!=='0px') return 'redondeada';
+      return 'rectangular';
+    }
+    function applyShape(btn,shape){
+      btn.style.borderRadius = shape==='rectangular'?'0':shape==='redondeada'?'8px':shape==='circular'?'50%':'0';
+      btn.style.transform = shape==='rombo'?'rotate(45deg)':'none';
+    }
+    function makeMovable(el){
+      let dragging=false,offX,offY;
+      el.addEventListener('mousedown',e=>{ if(e.target.tagName==='BUTTON') return; dragging=true; const r=el.getBoundingClientRect(); offX=e.clientX-r.left; offY=e.clientY-r.top; });
+      pdoc.addEventListener('mousemove',e=>{
+        if(!dragging) return; const cRect=pdoc.getElementById('canvas').getBoundingClientRect();
+        el.style.left=(e.clientX - cRect.left - offX)+'px'; el.style.top=(e.clientY - cRect.top - offY)+'px';
+      });
+      pdoc.addEventListener('mouseup',()=>{ dragging=false; });
+    }
+    function rgbToHex(rgb){ const m=/^(?:rgba?)?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb); return m? '#'+[1,2,3].map(i=>parseInt(m[i]).toString(16).padStart(2,'0')).join(''):rgb; }
+
+  })();
   </script>
 </body>
 </html>
