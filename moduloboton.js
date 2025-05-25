@@ -1,28 +1,23 @@
 // moduloboton.js
-// Este módulo gestiona la herramienta "Botón": al pulsar, crea un bloque botón en el canvas principal.
-
+// Este módulo gestiona la herramienta "Botón" y notifica al parent para crear un bloque botón en el canvas.
 (function() {
   // Esperar a que el botón interno esté disponible
   function init() {
     const btn = document.getElementById('modBtn');
     if (!btn) {
-      // Si no existe todavía, reintentar con retraso
-      return setTimeout(init, 50);
+      // Si no está aún agregado, reintentar tras un breve retraso
+      setTimeout(init, 50);
+      return;
     }
-
-    btn.addEventListener('click', () => {
-      // Ubicación inicial fija (puedes ajustar coordenadas según necesites)
-      const x = 30;
-      const y = 30;
-      // Llamar a la función global addBlock definida en la página principal
-      if (typeof addBlock === 'function') {
-        addBlock('button', x, y);
-      } else {
-        console.warn('addBlock no está disponible en el contexto global.');
-      }
+    // Cuando se hace click en la herramienta, notificar al parent
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      window.parent.postMessage({
+        source: 'moduloboton',
+        action: 'addBlock',
+        blockType: 'button'
+      }, '*');
     });
   }
-
-  // Iniciar módulo
   init();
 })();
