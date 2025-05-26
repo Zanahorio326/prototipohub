@@ -50,12 +50,15 @@
     });
     block.appendChild(handle);
 
-    // Toggle handle icon on click
-    handle.addEventListener('click', e => {
+    // Toggle handle icon on click or touch
+    function toggleMode(e) {
       e.stopPropagation();
       handleMode = handleMode === 'move' ? 'resize' : 'move';
       handle.textContent = handleMode === 'move' ? '💠' : '↘️';
-    });
+    }
+    handle.addEventListener('click', toggleMode);
+    // touch support for toggle
+    handle.addEventListener('touchend', e => { toggleMode(e); }, { passive: false });
     // También toggle al presionar (pointerdown)
     handle.addEventListener('pointerdown', e => {
       e.stopPropagation();
