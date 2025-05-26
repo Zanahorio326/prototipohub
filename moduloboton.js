@@ -1,4 +1,3 @@
-// moduloboton.js
 (function() {
   // Este módulo gestiona la creación del bloque + botón centrado en el lienzo principal
   const btn = document.getElementById('modBtn');
@@ -42,12 +41,39 @@
     innerBtn.style.padding = '8px 16px';
     innerBtn.addEventListener('click', e => {
       e.stopPropagation();
-      // Aquí puedes añadir la lógica de navegación si btn.dataset.url existe
       if (innerBtn.dataset.url) window.open(innerBtn.dataset.url, '_blank');
     });
 
-    // Montar en el canvas
     block.appendChild(innerBtn);
     canvas.appendChild(block);
+
+    // Función para hacer el bloque movible
+    function makeMovable(el) {
+      let isDragging = false;
+      let startX, startY, origX, origY;
+
+      el.addEventListener('mousedown', e => {
+        if (e.target === innerBtn) return;
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        origX = parseInt(el.style.left, 10);
+        origY = parseInt(el.style.top, 10);
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        el.style.left = origX + (e.clientX - startX) + 'px';
+        el.style.top = origY + (e.clientY - startY) + 'px';
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (isDragging) isDragging = false;
+      });
+    }
+
+    // Hacer el bloque movible
+    makeMovable(block);
   });
 })();
