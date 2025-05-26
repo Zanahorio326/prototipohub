@@ -13,9 +13,9 @@
       position: relative;
       font-family: sans-serif;
     }
-    /* Margen uniforme */
+    /* Márgenes uniformes */
     :root { --m: 10px; --toggle-h: 40px; }
-    /* Mesa (lienzo) con márgenes iguales y espacio para toggle */
+    /* Canvas con espacio para UI */
     #canvas {
       position: absolute;
       top: var(--m);
@@ -26,12 +26,10 @@
       border: 2px dashed #ccc;
       overflow: auto;
     }
-    /* Botón de cambio de modo (🔁) */
+    /* Botón toggle de modo 🔁 */
     #toggleModeBtn {
       position: absolute;
       bottom: var(--m);
-      left: 50%;
-      transform: translateX(-50%);
       width: var(--toggle-h);
       height: var(--toggle-h);
       font-size: 24px;
@@ -100,13 +98,9 @@
   </style>
 </head>
 <body>
-  <!-- Canvas principal -->
   <div id="canvas"></div>
-  <!-- Panel dinámico de herramientas -->
   <div id="panel"></div>
-  <!-- Botón puerta flotante -->
   <div id="door">📕</div>
-  <!-- Botón global para toggle de modo en módulos -->
   <div id="toggleModeBtn">🔁</div>
 
   <script>
@@ -115,89 +109,39 @@
       const panel = document.getElementById('panel');
       const canvas = document.getElementById('canvas');
       const toggleBtn = document.getElementById('toggleModeBtn');
-      let isOpen = false;
-      let dragging = false;
+      let isOpen = false, dragging = false;
       let offsetX = 0, offsetY = 0;
 
-      // Emitir señal global al pulsar 🔁
+      // Mantener toggleBtn centrado y dentro de límites
+      function clampToggle() {
+        const m = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--m'));
+        const h = toggleBtn.offsetHeight;
+        const minX = m;
+        const maxX = window.innerWidth - m - h;
+        let centerX = window.innerWidth / 2 - h / 2;
+        centerX = Math.max(minX, Math.min(centerX, maxX));
+        toggleBtn.style.left = centerX + 'px';
+      }
+      window.addEventListener('resize', clampToggle);
+      document.addEventListener('DOMContentLoaded', clampToggle);
+
+      // Toggle global de modo
       toggleBtn.addEventListener('click', () => {
         window.dispatchEvent(new CustomEvent('toggleMode'));
       });
 
-      // Mantener dentro de márgenes
-      function clampToggle() {
-        const m = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--m'));
-        const h = toggleBtn.offsetWidth;
-        let left = toggleBtn.offsetLeft;
-        if (left < m) toggleBtn.style.left = m + 'px';
-        if (left + h > window.innerWidth - m) toggleBtn.style.left = (window.innerWidth - m - h) + 'px';
-      }
-      window.addEventListener('resize', clampToggle);
-      clampToggle();
+      // Funciones auxiliares de panel y arrastre de puerta
+      function invertColor(c) { const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(c); if(!m)return'#000'; const r=(255-parseInt(m[1],16)).toString(16).padStart(2,'0'); const g=(255-parseInt(m[2],16)).toString(16).padStart(2,'0'); const b=(255-parseInt(m[3],16)).toString(16).padStart(2,'0'); return `#${r}${g}${b}`; }
+      function computePanelBg() { const bg=window.getComputedStyle(canvas).backgroundColor.match(/\d+/g); if(!bg)return'#000';return invertColor('#'+bg.slice(0,3).map(x=>parseInt(x).toString(16).padStart(2,'0')).join('')); }
+      function closePanel(){ isOpen=false; panel.style.width='0'; panel.style.background='transparent'; panel.addEventListener('transitionend', function h(){ panel.style.display='none'; panel.innerHTML=''; door.textContent='📕'; panel.removeEventListener('transitionend',h); }); }
 
-      // Color del panel
-      function invertColor(c) {
-        const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(c);
-        if (!m) return '#000';
-        return '#' + [1,2,3].map(i => (255 - parseInt(m[i],16)).toString(16).padStart(2,'0')).join('');
-      }
-      function computePanelBg() {
-        const bg = getComputedStyle(canvas).backgroundColor;
-        const rgb = bg.match(/\d+/g);
-        if (!rgb) return '#000';
-        const hex = '#' + rgb.slice(0,3).map(x=>parseInt(x).toString(16).padStart(2,'0')).join('');
-        return invertColor(hex);
-      }
-
-      function closePanel() {
-        isOpen = false;
-        panel.style.width = '0';
-        panel.style.background = 'transparent';
-        panel.addEventListener('transitionend', function h(){
-          panel.style.display = 'none';
-          panel.innerHTML = '';
-          door.textContent = '📕';
-          panel.removeEventListener('transitionend', h);
-        });
-      }
-
-      // Toggle panel
-      door.addEventListener('click', () => {
-        if (dragging) return;
-        const r = door.getBoundingClientRect();
-        if (isOpen) closePanel();
-        else {
-          const mid = window.innerWidth/2;
-          let left, width;
-          if (r.left > mid) { left=0; width=r.left; }
-          else { left=r.right; width=window.innerWidth-r.right; }
-          panel.style.display='flex';
-          panel.style.top=r.top+'px';
-          panel.style.left=left+'px';
-          panel.style.height=r.height+'px';
-          panel.style.width=width+'px';
-          panel.style.background=computePanelBg();
-          panel.innerHTML='<button id="modBtn">🔘<br>Botón</button>';
-          const s=document.createElement('script');
-          s.src='https://zanahorio326.github.io/prototipohub/moduloboton.js';
-          panel.appendChild(s);
-          door.textContent='📖';
-          isOpen=true;
-        }
-      });
-      door.addEventListener('pointerup',()=>{ if(isOpen)closePanel(); });
-
-      // Arrastre puerta
-      function startDrag(x,y){ if(isOpen)closePanel(); dragging=true; offsetX=x-door.offsetLeft; offsetY=y-door.offsetTop; door.style.cursor='grabbing'; }
-      function duringDrag(x,y){ if(!dragging)return; let nx=x-offsetX, ny=y-offsetY; nx=Math.max(0,Math.min(nx,window.innerWidth-door.offsetWidth)); ny=Math.max(0,Math.min(ny,window.innerHeight-door.offsetHeight)); door.style.left=nx+'px'; door.style.top=ny+'px'; clampToggle(); }
-      function endDrag(){ if(dragging){ dragging=false; door.style.cursor='grab'; clampToggle(); } }
-
-      door.addEventListener('mousedown',e=>startDrag(e.clientX,e.clientY));
-      document.addEventListener('mousemove',e=>duringDrag(e.clientX,e.clientY));
-      document.addEventListener('mouseup',endDrag);
-      door.addEventListener('touchstart',e=>{const t=e.touches[0];startDrag(t.clientX,t.clientY);}, {passive:false});
-      document.addEventListener('touchmove',e=>{const t=e.touches[0];duringDrag(t.clientX,t.clientY);e.preventDefault();},{passive:false});
-      document.addEventListener('touchend',endDrag);
+      door.addEventListener('click',()=>{ if(dragging)return; const r=door.getBoundingClientRect(); if(isOpen) closePanel(); else{ const mid=window.innerWidth/2; let left,width; if(r.left>mid){ left=0; width=r.left; } else{ left=r.right; width=window.innerWidth-r.right; } panel.style.display='flex'; panel.style.top=r.top+'px'; panel.style.left=left+'px'; panel.style.height=r.height+'px'; panel.style.width=width+'px'; panel.style.background=computePanelBg(); panel.innerHTML='<button id="modBtn">🔘<br>Botón</button>'; let s=document.createElement('script');s.src='https://zanahorio326.github.io/prototipohub/moduloboton.js';panel.appendChild(s);door.textContent='📖';isOpen=true;} });
+      door.addEventListener('pointerup',()=>{ if(isOpen) closePanel(); });
+      function startDrag(x,y){ if(isOpen) closePanel(); dragging=true; offsetX=x-door.offsetLeft; offsetY=y-door.offsetTop; door.style.cursor='grabbing'; }
+      function duringDrag(x,y){ if(!dragging)return; let nx=x-offsetX,ny=y-offsetY; nx=Math.max(0,Math.min(nx,window.innerWidth-door.offsetWidth)); ny=Math.max(0,Math.min(ny,window.innerHeight-door.offsetHeight)); door.style.left=nx+'px'; door.style.top=ny+'px'; }
+      function endDrag(){ if(dragging){ dragging=false; door.style.cursor='grab'; }}
+      door.addEventListener('mousedown',e=>startDrag(e.clientX,e.clientY)); document.addEventListener('mousemove',e=>duringDrag(e.clientX,e.clientY)); document.addEventListener('mouseup',endDrag);
+      door.addEventListener('touchstart',e=>{const t=e.touches[0];startDrag(t.clientX,t.clientY);},{passive:false}); document.addEventListener('touchmove',e=>{const t=e.touches[0];duringDrag(t.clientX,t.clientY);e.preventDefault();},{passive:false}); document.addEventListener('touchend',endDrag);
     })();
   </script>
 </body>
