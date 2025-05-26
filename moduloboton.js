@@ -1,5 +1,5 @@
 (function() {
-  // Este módulo gestiona la creación del bloque + botón centrado en el lienzo principal
+  // Este módulo gestiona la creación del bloque + botón centrado y manejador de arrastre
   const btn = document.getElementById('modBtn');
   if (!btn) {
     console.warn('modBtn no encontrado en el DOM');
@@ -23,10 +23,10 @@
     block.style.position = 'absolute';
     block.style.left = x + 'px';
     block.style.top = y + 'px';
-    block.style.padding = '10px';        // margen interno
+    block.style.padding = '10px';
     block.style.minWidth = '80px';
     block.style.minHeight = '40px';
-    block.style.display = 'flex';        // centrado
+    block.style.display = 'flex';
     block.style.alignItems = 'center';
     block.style.justifyContent = 'center';
     block.style.background = 'transparent';
@@ -43,23 +43,47 @@
       e.stopPropagation();
       if (innerBtn.dataset.url) window.open(innerBtn.dataset.url, '_blank');
     });
-
     block.appendChild(innerBtn);
+
+    // Crear el manejador de arrastre (esquina inferior derecha)
+    const handle = document.createElement('div');
+    handle.textContent = '💠';
+    Object.assign(handle.style, {
+      position: 'absolute',
+      width: '24px',
+      height: '24px',
+      bottom: '4px',
+      right: '4px',
+      borderRadius: '50%',
+      background: '#fff',
+      border: '1px solid #0056b3',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      cursor: 'grab',
+      userSelect: 'none',
+      fontSize: '14px',
+      boxSizing: 'border-box'
+    });
+    block.style.position = 'absolute';
+    block.appendChild(handle);
+
     canvas.appendChild(block);
 
-    // Función para hacer el bloque movible (mouse + touch)
-    function makeMovable(el) {
+    // Función para hacer el bloque movible desde el handle (mouse + touch)
+    function makeMovable(el, handler) {
       let isDragging = false;
       let startX, startY, origX, origY;
 
-      // Mouse events
-      el.addEventListener('mousedown', e => {
-        if (e.target === innerBtn) return;
+      // Inicio de arrastre
+      handler.addEventListener('mousedown', e => {
+        e.stopPropagation();
         isDragging = true;
         startX = e.clientX;
         startY = e.clientY;
         origX = parseInt(el.style.left, 10);
         origY = parseInt(el.style.top, 10);
+        handler.style.cursor = 'grabbing';
         e.preventDefault();
       });
 
@@ -70,13 +94,16 @@
       });
 
       document.addEventListener('mouseup', () => {
-        if (isDragging) isDragging = false;
+        if (isDragging) {
+          isDragging = false;
+          handler.style.cursor = 'grab';
+        }
       });
 
       // Touch events
-      el.addEventListener('touchstart', e => {
+      handler.addEventListener('touchstart', e => {
         const t = e.touches[0];
-        if (e.target === innerBtn) return;
+        e.stopPropagation();
         isDragging = true;
         startX = t.clientX;
         startY = t.clientY;
@@ -94,11 +121,14 @@
       }, { passive: false });
 
       document.addEventListener('touchend', () => {
-        if (isDragging) isDragging = false;
+        if (isDragging) {
+          isDragging = false;
+          handler.style.cursor = 'grab';
+        }
       });
     }
 
-    // Hacer el bloque movible
-    makeMovable(block);
+    // Hacer el bloque movible usando el handle
+    makeMovable(block, handle);
   });
 })();
