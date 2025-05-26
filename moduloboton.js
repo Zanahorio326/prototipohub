@@ -45,7 +45,7 @@
     });
     block.appendChild(innerBtn);
 
-    // Append block first to calculate dimensions
+    // Append block first
     canvas.appendChild(block);
 
     // Crear el handle de arrastre en esquina inferior derecha del bloque
@@ -55,8 +55,8 @@
       position: 'absolute',
       width: '24px',
       height: '24px',
-      bottom: '4px',
-      right: '4px',
+      bottom: '0px',    // esquina exterior del bloque
+      right: '0px',     // esquina exterior del bloque
       borderRadius: '50%',
       background: '#fff',
       border: '1px solid #0056b3',
