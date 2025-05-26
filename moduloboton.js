@@ -47,11 +47,12 @@
     block.appendChild(innerBtn);
     canvas.appendChild(block);
 
-    // Función para hacer el bloque movible
+    // Función para hacer el bloque movible (mouse + touch)
     function makeMovable(el) {
       let isDragging = false;
       let startX, startY, origX, origY;
 
+      // Mouse events
       el.addEventListener('mousedown', e => {
         if (e.target === innerBtn) return;
         isDragging = true;
@@ -69,6 +70,30 @@
       });
 
       document.addEventListener('mouseup', () => {
+        if (isDragging) isDragging = false;
+      });
+
+      // Touch events
+      el.addEventListener('touchstart', e => {
+        const t = e.touches[0];
+        if (e.target === innerBtn) return;
+        isDragging = true;
+        startX = t.clientX;
+        startY = t.clientY;
+        origX = parseInt(el.style.left, 10);
+        origY = parseInt(el.style.top, 10);
+        e.preventDefault();
+      }, { passive: false });
+
+      document.addEventListener('touchmove', e => {
+        if (!isDragging) return;
+        const t = e.touches[0];
+        el.style.left = origX + (t.clientX - startX) + 'px';
+        el.style.top = origY + (t.clientY - startY) + 'px';
+        e.preventDefault();
+      }, { passive: false });
+
+      document.addEventListener('touchend', () => {
         if (isDragging) isDragging = false;
       });
     }
