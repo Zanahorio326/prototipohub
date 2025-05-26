@@ -3,327 +3,199 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Editor</title>
+  <title>Editor Restaurado</title>
   <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
-    .sidebar {
-      display: flex;
-      overflow-x: auto;
-      overflow-y: hidden;
-      background: #f0f0f0;
-      padding: 10px;
-      border-bottom: 1px solid #ccc;
-      touch-action: none;
-      scrollbar-width: thin;
-      scrollbar-color: #aaa transparent;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #f8f8f8; height: 100vh; overflow: hidden; position: relative; font-family: sans-serif; }
+    /* Mesa (lienzo) ocupa casi toda la pantalla con margen blanco */
+    #canvas {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      bottom: 20px;
+      background: white;
+      border: 2px dashed #ccc;
+      overflow: auto;
     }
-    .sidebar::-webkit-scrollbar { height: 20px; }
-    .sidebar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
-
-    .tool, iframe.tool {
-      display: inline-flex;
+    /* Botón puerta flotante */
+    #door {
+      position: absolute;
+      top: 40px;
+      left: 40px;
+      width: 40px;
+      height: 40px;
+      font-size: 24px;
+      display: flex;
       align-items: center;
       justify-content: center;
-      min-width: 80px;
-      padding: 10px;
-      background: white;
-      border: 1px solid #ccc;
-      margin-right: 10px;
-      text-align: center;
+      background: #fff;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      cursor: grab;
       user-select: none;
-      cursor: pointer;
-      min-height: 40px;
+      z-index: 10;
     }
-    #trash { background: #ffe6e6; border-color: #ff4d4d; }
-
-    .canvas { flex: 1; background: #fff; border-top: 2px dashed #ccc; position: relative; overflow: auto; }
-    .block { position: absolute; padding: 10px; border: 1px solid #aaa; background: transparent; touch-action: none; min-width: 60px; min-height: 40px; resize: both; overflow: auto; }
-    .block h2 { margin: 0; }
-    .block img { max-width: 100%; height: auto; cursor: pointer; touch-action: none; display: block; }
-    .block button { padding: 8px 16px; cursor: pointer; }
-
-    .text-tools, .button-tools { position: absolute; display: none; background: rgba(255,255,255,0.95); border: 1px solid #ccc; padding: 10px; z-index: 1000; box-shadow: 0 2px 6px rgba(0,0,0,0.2); border-radius: 4px; }
-    .text-tools select, .text-tools input[type="color"], .text-tools input[type="checkbox"], .button-tools input, .button-tools select { display: block; margin-bottom: 8px; width: 100%; }
-    .button-tools label { font-size: 14px; margin-top: 4px; display: block; }
-    .button-tools button { margin-top: 8px; }
-
-    /* Único cambio realizado */
-    #iframeFondo {
-      display: inline-flex;
-      width: 80px;
-      height: 40px;
-      padding: 0;
-      border: none;
+    /* Panel deslizante */
+    #panel {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 0;
       overflow: hidden;
+      transition: width 0.3s ease;
+      z-index: 5;
+      display: none; /* oculto inicialmente */
+      align-items: center;
+      padding-left: 10px;
+      background: transparent;
+    }
+    /* Botón interno de la herramienta */
+    #modBtn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #007bff;
+      color: white;
+      border: 2px solid #0056b3;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 16px;
+      line-height: 1.2;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    #modBtn:hover {
+      background: #0056b3;
+      border-color: #003f7f;
     }
   </style>
 </head>
 <body>
-  <div class="sidebar">
-    <div class="tool" data-type="text">📝 Texto</div>
-    <div class="tool" data-type="image">🖼️ Imagen</div>
-    <div class="tool" data-type="button">🔘 Botón</div>
-    <iframe id="iframeFondo" class="tool" src="https://zanahorio326.github.io/prototipohub/modulofondo.html" title="Fondo"></iframe>
-    <div class="tool" id="trash">🗑️ Basurero</div>
-  </div>
+  <div id="canvas"></div>
+  <div id="panel"></div>
+  <!-- Icono de puerta cambia: cerrado 📕, abierto 📖 -->
+  <div id="door">📕</div>
 
-  <div class="canvas" id="canvas"></div>
-
-  <input type="file" id="imgUploadInput" accept="image/*" style="display:none" />
-  <input type="color" id="bgColorPicker" style="display:none" />
-  <input type="color" id="btnColorPicker" style="display:none" />
-
-  <div class="text-tools" id="textTools">
-    <select id="fontSize"><option value="12px">12px</option><option value="14px">14px</option><option value="16px" selected>16px</option><option value="18px">18px</option><option value="20px">20px</option><option value="24px">24px</option><option value="28px">28px</option><option value="32px">32px</option></select>
-    <select id="fontFamily"><option value="sans-serif" selected>Sans</option><option value="serif">Serif</option><option value="monospace">Monospace</option></select>
-    <input type="color" id="fontColor" title="Color de texto" />
-    <label><input type="checkbox" id="outlineToggle" /> Contorno</label>
-    <input type="color" id="outlineColor" title="Color del contorno" disabled />
-  </div>
-
-  <div class="button-tools" id="buttonTools">
-    <label>Texto del botón:<input type="text" id="btnTextInput" /></label>
-    <label>Enlace URL:<input type="text" id="btnUrlInput" /></label>
-    <label>Color de fondo:<input type="color" id="btnBgInput" /></label>
-    <label>Forma:<select id="btnShapeSelect"><option value="rectangular">Rectangular</option><option value="redondeada">Redondeada</option><option value="circular">Circular</option><option value="rombo">Rombo</option></select></label>
-    <button id="btnApply">Aplicar</button>
-  </div>
-
-  <!-- Todo el JavaScript está completo y sin cambios -->
   <script>
-    const tools = document.querySelectorAll('.tool');
-    const canvas = document.getElementById('canvas');
-    const trash = document.getElementById('trash');
-    const textTools = document.getElementById('textTools');
-    const buttonTools = document.getElementById('buttonTools');
-    const fontSize = document.getElementById('fontSize');
-    const fontFamily = document.getElementById('fontFamily');
-    const fontColor = document.getElementById('fontColor');
-    const outlineToggle = document.getElementById('outlineToggle');
-    const outlineColor = document.getElementById('outlineColor');
-    const imgUploadInput = document.getElementById('imgUploadInput');
-    const bgColorPicker = document.getElementById('bgColorPicker');
-    const btnTextInput = document.getElementById('btnTextInput');
-    const btnUrlInput = document.getElementById('btnUrlInput');
-    const btnBgInput = document.getElementById('btnBgInput');
-    const btnShapeSelect = document.getElementById('btnShapeSelect');
-    const btnApply = document.getElementById('btnApply');
-    const iframeFondo = document.getElementById('iframeFondo');
+    (function(){
+      const door = document.getElementById('door');
+      const panel = document.getElementById('panel');
+      const canvas = document.getElementById('canvas');
+      let isOpen = false;
+      let dragging = false;
+      let offsetX = 0, offsetY = 0;
 
-    let currentEditable = null;
-    let currentImage = null;
-    let currentButton = null;
-    let draggedType = null;
-
-    tools.forEach(tool => {
-      if (tool === iframeFondo || tool.id === 'trash') return;
-      tool.addEventListener('touchstart', () => { draggedType = tool.dataset.type; });
-      tool.addEventListener('touchend', () => {
-        if (draggedType) { addBlock(draggedType, 30, 30); draggedType = null; }
-      });
-    });
-
-    window.addEventListener('message', e => {
-      if (e.data && e.data.bgColor) {
-        canvas.style.background = e.data.bgColor;
+      // Calcular color contrastante
+      function invertColor(color) {
+        const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
+        if (!m) return '#000';
+        const r = (255 - parseInt(m[1], 16)).toString(16).padStart(2, '0');
+        const g = (255 - parseInt(m[2], 16)).toString(16).padStart(2, '0');
+        const b = (255 - parseInt(m[3], 16)).toString(16).padStart(2, '0');
+        return `#${r}${g}${b}`;
       }
-    });
-
-    imgUploadInput.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (file && currentImage) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          currentImage.src = reader.result;
-          currentImage.onload = () => {
-            const block = currentImage.parentElement;
-            const maxW = canvas.clientWidth * 0.8;
-            const maxH = canvas.clientHeight * 0.8;
-            let w = currentImage.naturalWidth;
-            let h = currentImage.naturalHeight;
-            const scale = Math.min(1, maxW / w, maxH / h);
-            block.style.width = (w * scale) + 'px';
-            block.style.height = (h * scale) + 'px';
-          };
-        };
-        reader.readAsDataURL(file);
+      function computePanelBg() {
+        const behind = window.getComputedStyle(canvas).backgroundColor;
+        const rgb = behind.match(/\d+/g);
+        if (!rgb) return '#000';
+        const hex = '#' + rgb.slice(0,3).map(x=>parseInt(x).toString(16).padStart(2,'0')).join('');
+        return invertColor(hex);
       }
-      imgUploadInput.value = '';
-    });
 
-    function addBlock(type, x, y) {
-      const el = document.createElement('div');
-      el.className = 'block';
-      el.style.left = `${x}px`;
-      el.style.top = `${y}px`;
-      if (type === 'text') {
-        const h2 = document.createElement('h2');
-        h2.textContent = 'Texto editable';
-        h2.contentEditable = 'false';
-        h2.style.fontSize = '16px';
-        h2.style.fontFamily = 'sans-serif';
-        h2.style.color = '#000';
-        h2.addEventListener('click', e => {
-          currentEditable = h2;
-          h2.contentEditable = 'true';
-          h2.focus();
-          showTextTools(h2);
-          e.stopPropagation();
+      function closePanel() {
+        isOpen = false;
+        panel.style.width = '0';
+        panel.style.background = 'transparent';
+        // Esperar a terminar animación antes de ocultar contenido e icono
+        panel.addEventListener('transitionend', function handler() {
+          panel.style.display = 'none';
+          panel.innerHTML = '';
+          door.textContent = '📕'; // icono cerrado tras cierre
+          panel.removeEventListener('transitionend', handler);
         });
-        el.appendChild(h2);
-      } else if (type === 'image') {
-        const img = document.createElement('img');
-        img.src = 'https://via.placeholder.com/100';
-        img.alt = 'img';
-        img.addEventListener('click', e => {
-          currentImage = img;
-          imgUploadInput.click();
-          e.stopPropagation();
-        });
-        el.appendChild(img);
-      } else if (type === 'button') {
-        const btn = document.createElement('button');
-        btn.textContent = 'Botón';
-        btn.dataset.url = '';
-        btn.style.cursor = 'pointer';
-        btn.addEventListener('click', e => {
-          e.stopPropagation();
-          if (btn.dataset.url) window.open(btn.dataset.url, '_blank');
-        });
-        el.addEventListener('click', e => {
-          e.stopPropagation();
-          openButtonTools(btn, el);
-        });
-        el.appendChild(btn);
       }
-      makeMovableWithHold(el);
-      canvas.appendChild(el);
-    }
 
-    function openButtonTools(btn, block) {
-      currentButton = btn;
-      buttonTools.style.display = 'block';
-      const rect = block.getBoundingClientRect();
-      buttonTools.style.top = `${rect.top + window.scrollY + block.offsetHeight + 8}px`;
-      buttonTools.style.left = `${rect.left}px`;
-      btnTextInput.value = btn.textContent;
-      btnUrlInput.value = btn.dataset.url;
-      btnBgInput.value = rgbToHex(getComputedStyle(btn).backgroundColor) || '#ffffff';
-      btnShapeSelect.value = getShape(btn);
-    }
-
-    btnApply.addEventListener('click', () => {
-      if (currentButton) {
-        currentButton.textContent = btnTextInput.value;
-        currentButton.dataset.url = btnUrlInput.value;
-        currentButton.style.background = btnBgInput.value;
-        applyShape(currentButton, btnShapeSelect.value);
-      }
-      buttonTools.style.display = 'none';
-    });
-
-    function getShape(btn) {
-      const br = getComputedStyle(btn).borderRadius;
-      const tf = getComputedStyle(btn).transform;
-      if (tf.includes('45')) return 'rombo';
-      if (br === '50%') return 'circular';
-      if (br !== '0px') return 'redondeada';
-      return 'rectangular';
-    }
-
-    function applyShape(btn, shape) {
-      btn.style.borderRadius = shape === 'rectangular' ? '0' : shape === 'redondeada' ? '8px' : shape === 'circular' ? '50%' : '0';
-      btn.style.transform = shape === 'rombo' ? 'rotate(45deg)' : 'none';
-    }
-
-    function makeMovableWithHold(el) {
-      let isDragging = false, offsetX, offsetY, holdTimer, startX, startY, lastX, lastY;
-      const startHold = e => {
-        if (e.target === currentEditable) return;
-        const touch = e.touches ? e.touches[0] : e;
-        startX = touch.clientX;
-        startY = touch.clientY;
-        holdTimer = setTimeout(() => {
-          isDragging = true;
-          offsetX = startX - el.getBoundingClientRect().left;
-          offsetY = startY - el.getBoundingClientRect().top;
-        }, 500);
-      };
-      const move = e => {
-        const touch = e.touches ? e.touches[0] : e;
-        lastX = touch.clientX;
-        lastY = touch.clientY;
-        if (!isDragging) return;
-        const rect = canvas.getBoundingClientRect();
-        el.style.left = `${lastX - rect.left - offsetX}px`;
-        el.style.top = `${lastY - rect.top - offsetY}px`;
-        e.preventDefault();
-      };
-      const endHold = () => {
-        clearTimeout(holdTimer);
-        if (isDragging) {
-          const r = trash.getBoundingClientRect();
-          if (lastX >= r.left && lastX <= r.right && lastY >= r.top && lastY <= r.bottom) el.remove();
+      // Toggle panel on click
+      door.addEventListener('click', () => {
+        if (dragging) return;
+        const doorRect = door.getBoundingClientRect();
+        if (isOpen) {
+          closePanel();
+        } else {
+          // Abrir panel hacia el lado con más espacio
+          const middle = window.innerWidth / 2;
+          let panelLeft, panelWidth;
+          if (doorRect.left > middle) {
+            // Abrir hacia la izquierda
+            panelLeft = 0;
+            panelWidth = doorRect.left;
+          } else {
+            // Abrir hacia la derecha
+            panelLeft = doorRect.right;
+            panelWidth = window.innerWidth - doorRect.right;
+          }
+          panel.style.display = 'flex';
+          panel.style.top = doorRect.top + 'px';
+          panel.style.left = panelLeft + 'px';
+          panel.style.height = doorRect.height + 'px';
+          panel.style.width = panelWidth + 'px';
+          panel.style.background = computePanelBg();
+          panel.innerHTML = '<button id="modBtn">🔘<br>Botón</button>';
+          const script = document.createElement('script');
+          script.src = 'https://zanahorio326.github.io/prototipohub/moduloboton.js';
+          panel.appendChild(script);
+          door.textContent = '📖'; // icono abierto
+          isOpen = true;
         }
-        isDragging = false;
-      };
-      el.addEventListener('touchstart', startHold);
-      el.addEventListener('mousedown', startHold);
-      document.addEventListener('touchmove', move, { passive: false });
-      document.addEventListener('mousemove', move);
-      document.addEventListener('touchend', endHold);
-      document.addEventListener('mouseup', endHold);
-    }
+      });
+      
+      // Ensure single click or pointerup closes panel immediately
+      door.addEventListener('pointerup', () => {
+        if (isOpen) closePanel();
+      });
 
-    function showTextTools(target) {
-      const rect = target.getBoundingClientRect();
-      textTools.style.display = 'block';
-      const h = textTools.offsetHeight;
-      textTools.style.top = `${rect.top + window.scrollY - h - 8}px`;
-      textTools.style.left = `${rect.left}px`;
-      fontSize.value = target.style.fontSize || '16px';
-      fontFamily.value = target.style.fontFamily || 'sans-serif';
-      fontColor.value = rgbToHex(getComputedStyle(target).color) || '#000';
-      const sw = getComputedStyle(target).WebkitTextStrokeWidth;
-      outlineToggle.checked = sw && sw !== '0px';
-      outlineColor.disabled = !outlineToggle.checked;
-      outlineColor.value = rgbToHex(getComputedStyle(target).WebkitTextStrokeColor) || '#000';
-    }
-
-    function hideTextTools() {
-      if (currentEditable) currentEditable.contentEditable = 'false';
-      currentEditable = null;
-      textTools.style.display = 'none';
-    }
-
-    fontSize.addEventListener('change', () => { if (currentEditable) currentEditable.style.fontSize = fontSize.value; });
-    fontFamily.addEventListener('change', () => { if (currentEditable) currentEditable.style.fontFamily = fontFamily.value; });
-    fontColor.addEventListener('input', () => { if (currentEditable) currentEditable.style.color = fontColor.value; });
-    outlineToggle.addEventListener('change', () => {
-      if (!currentEditable) return;
-      if (outlineToggle.checked) {
-        currentEditable.style.WebkitTextStrokeWidth = '1px';
-        outlineColor.disabled = false;
-        currentEditable.style.WebkitTextStrokeColor = outlineColor.value;
-      } else {
-        currentEditable.style.WebkitTextStrokeWidth = '';
-        outlineColor.disabled = true;
+      function startDrag(x, y) {
+        if (isOpen) closePanel();
+        dragging = true;
+        offsetX = x - door.offsetLeft;
+        offsetY = y - door.offsetTop;
+        door.style.cursor = 'grabbing';
       }
-    });
-    outlineColor.addEventListener('input', () => { if (currentEditable && outlineToggle.checked) currentEditable.style.WebkitTextStrokeColor = outlineColor.value; });
+      function duringDrag(x, y) {
+        if (!dragging) return;
+        let nx = x - offsetX;
+        let ny = y - offsetY;
+        nx = Math.max(0, Math.min(nx, window.innerWidth - door.offsetWidth));
+        ny = Math.max(0, Math.min(ny, window.innerHeight - door.offsetHeight));
+        door.style.left = nx + 'px';
+        door.style.top = ny + 'px';
+      }
+      function endDrag() {
+        if (dragging) {
+          dragging = false;
+          door.style.cursor = 'grab';
+        }
+      }
 
-    document.addEventListener('click', e => {
-      if (currentEditable && !textTools.contains(e.target) && e.target !== currentEditable) hideTextTools();
-      if (buttonTools.style.display === 'block' && !buttonTools.contains(e.target)) buttonTools.style.display = 'none';
-    });
-    textTools.addEventListener('click', e => e.stopPropagation());
-    buttonTools.addEventListener('click', e => e.stopPropagation());
+      // Mouse events
+      door.addEventListener('mousedown', e => startDrag(e.clientX, e.clientY));
+      document.addEventListener('mousemove', e => duringDrag(e.clientX, e.clientY));
+      document.addEventListener('mouseup', endDrag);
 
-    function rgbToHex(rgb) {
-      const m = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/i.exec(rgb);
-      return m ? '#' + [1,2,3].map(i => parseInt(m[i]).toString(16).padStart(2,'0')).join('') : rgb;
-    }
+      // Touch events
+      door.addEventListener('touchstart', e => {
+        const t = e.touches[0];
+        startDrag(t.clientX, t.clientY);
+      });
+      document.addEventListener('touchmove', e => {
+        const t = e.touches[0];
+        duringDrag(t.clientX, t.clientY);
+        e.preventDefault();
+      }, { passive: false });
+      document.addEventListener('touchend', endDrag);
+    })();
   </script>
 </body>
 </html>
