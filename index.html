@@ -6,14 +6,20 @@
   <title>Editor Restaurado</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #f8f8f8; height: 100vh; overflow: hidden; position: relative; font-family: sans-serif; }
-    /* Mesa (lienzo) ocupa casi toda la pantalla con margen blanco */
+    body {
+      background: #f8f8f8;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+      font-family: sans-serif;
+    }
+    /* Mesa (lienzo) ocupa casi toda la pantalla con márgenes mayores */
     #canvas {
       position: absolute;
-      top: 20px;
+      top: 60px;    /* deja espacio para buscador/enlaces arriba */
       left: 20px;
       right: 20px;
-      bottom: 60px; /* Deja espacio para el botón de toggle */
+      bottom: 100px; /* deja espacio para el toggle y controles abajo */
       background: white;
       border: 2px dashed #ccc;
       overflow: auto;
@@ -21,7 +27,7 @@
     /* Botón de cambio de modo (🔁) */
     #toggleModeBtn {
       position: absolute;
-      bottom: 20px;
+      bottom: 40px; /* desplazado un poco más arriba */
       left: 50%;
       transform: translateX(-50%);
       width: 40px;
@@ -40,7 +46,7 @@
     /* Botón puerta flotante */
     #door {
       position: absolute;
-      top: 40px;
+      top: 80px;    /* también baja para no quedar bajo la barra de búsqueda */
       left: 40px;
       width: 40px;
       height: 40px;
@@ -92,9 +98,11 @@
   </style>
 </head>
 <body>
+  <!-- Canvas principal -->
   <div id="canvas"></div>
+  <!-- Panel dinámico de herramientas -->
   <div id="panel"></div>
-  <!-- Icono de puerta cambia: cerrado 📕, abierto 📖 -->
+  <!-- Botón puerta flotante -->
   <div id="door">📕</div>
   <!-- Botón global para toggle de modo en módulos -->
   <div id="toggleModeBtn">🔁</div>
@@ -111,11 +119,11 @@
       // Botón de toggle global
       const toggleBtn = document.getElementById('toggleModeBtn');
       toggleBtn.addEventListener('click', () => {
-        // Enviar señal a los módulos para alternar modo
+        // Señal a los módulos para alternar modo
         window.dispatchEvent(new CustomEvent('toggleMode'));
       });
 
-      // Calcular color contrastante
+      // Color contrastante para el panel
       function invertColor(color) {
         const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
         if (!m) return '#000';
@@ -125,8 +133,8 @@
         return `#${r}${g}${b}`;
       }
       function computePanelBg() {
-        const behind = window.getComputedStyle(canvas).backgroundColor;
-        const rgb = behind.match(/\d+/g);
+        const bg = window.getComputedStyle(canvas).backgroundColor;
+        const rgb = bg.match(/\d+/g);
         if (!rgb) return '#000';
         const hex = '#' + rgb.slice(0,3).map(x=>parseInt(x).toString(16).padStart(2,'0')).join('');
         return invertColor(hex);
@@ -144,26 +152,27 @@
         });
       }
 
-      // Toggle panel on click
+      // Toggle panel al hacer click en puerta
       door.addEventListener('click', () => {
         if (dragging) return;
-        const doorRect = door.getBoundingClientRect();
-        if (isOpen) closePanel();
-        else {
-          const middle = window.innerWidth / 2;
-          let panelLeft, panelWidth;
-          if (doorRect.left > middle) {
-            panelLeft = 0;
-            panelWidth = doorRect.left;
+        const rect = door.getBoundingClientRect();
+        if (isOpen) {
+          closePanel();
+        } else {
+          const mid = window.innerWidth / 2;
+          let left, width;
+          if (rect.left > mid) {
+            left = 0;
+            width = rect.left;
           } else {
-            panelLeft = doorRect.right;
-            panelWidth = window.innerWidth - doorRect.right;
+            left = rect.right;
+            width = window.innerWidth - rect.right;
           }
           panel.style.display = 'flex';
-          panel.style.top = doorRect.top + 'px';
-          panel.style.left = panelLeft + 'px';
-          panel.style.height = doorRect.height + 'px';
-          panel.style.width = panelWidth + 'px';
+          panel.style.top = rect.top + 'px';
+          panel.style.left = left + 'px';
+          panel.style.height = rect.height + 'px';
+          panel.style.width = width + 'px';
           panel.style.background = computePanelBg();
           panel.innerHTML = '<button id="modBtn">🔘<br>Botón</button>';
           const script = document.createElement('script');
@@ -175,29 +184,38 @@
       });
       door.addEventListener('pointerup', () => { if (isOpen) closePanel(); });
 
-      function startDrag(x, y) {
+      function startDrag(x,y) {
         if (isOpen) closePanel();
         dragging = true;
         offsetX = x - door.offsetLeft;
         offsetY = y - door.offsetTop;
         door.style.cursor = 'grabbing';
       }
-      function duringDrag(x, y) {
+      function duringDrag(x,y) {
         if (!dragging) return;
-        let nx = x - offsetX;
-        let ny = y - offsetY;
+        let nx = x - offsetX, ny = y - offsetY;
         nx = Math.max(0, Math.min(nx, window.innerWidth - door.offsetWidth));
         ny = Math.max(0, Math.min(ny, window.innerHeight - door.offsetHeight));
         door.style.left = nx + 'px';
         door.style.top = ny + 'px';
       }
-      function endDrag() { if (dragging) { dragging = false; door.style.cursor = 'grab'; } }
+      function endDrag() {
+        if (dragging) {
+          dragging = false;
+          door.style.cursor = 'grab';
+        }
+      }
 
+      // Eventos de arrastre para la puerta
       door.addEventListener('mousedown', e => startDrag(e.clientX, e.clientY));
       document.addEventListener('mousemove', e => duringDrag(e.clientX, e.clientY));
       document.addEventListener('mouseup', endDrag);
-      door.addEventListener('touchstart', e => { const t=e.touches[0]; startDrag(t.clientX,t.clientY); }, { passive: false });
-      document.addEventListener('touchmove', e => { const t=e.touches[0]; duringDrag(t.clientX,t.clientY); e.preventDefault(); }, { passive: false });
+      door.addEventListener('touchstart', e => {
+        const t = e.touches[0]; startDrag(t.clientX, t.clientY);
+      }, { passive: false });
+      document.addEventListener('touchmove', e => {
+        const t = e.touches[0]; duringDrag(t.clientX, t.clientY); e.preventDefault();
+      }, { passive: false });
       document.addEventListener('touchend', endDrag);
     })();
   </script>
