@@ -1,7 +1,14 @@
 (function() {
-  // Este módulo gestiona la creación del bloque + botón centrado con mover/resize toggle
+  // Este módulo gestiona la creación del bloque + botón centrado con mover/resize basado en señal global
   const btn = document.getElementById('modBtn');
   if (!btn) return console.warn('modBtn no encontrado');
+
+  // Estado de modo: 'move' o 'resize'
+  let mode = 'move';
+  // Escuchar señal global de cambio de modo
+  window.addEventListener('toggleMode', () => {
+    mode = mode === 'move' ? 'resize' : 'move';
+  });
 
   btn.addEventListener('click', () => {
     const canvas = document.getElementById('canvas');
@@ -38,15 +45,15 @@
     block.appendChild(innerBtn);
     canvas.appendChild(block);
 
-    // Ajustar tamaño del bloque
+    // Ajustar tamaño del bloque según botón + margen
     const btnRect = innerBtn.getBoundingClientRect();
     block.style.width = btnRect.width + margin * 2 + 'px';
     block.style.height = btnRect.height + margin * 2 + 'px';
 
-    // Crear handle para mover/resizar
+    // Crear handle para mover/resizar en esquina del bloque
     const handleSize = 24;
     const handle = document.createElement('div');
-    handle.textContent = '💠';
+    handle.textContent = mode === 'move' ? '💠' : '↘️';
     Object.assign(handle.style, {
       position: 'absolute',
       width: handleSize + 'px',
@@ -66,40 +73,12 @@
     });
     block.appendChild(handle);
 
-    // Crear botón toggle global 🔁 en margen inferior del canvas
-    let toggleBtn = document.getElementById('toggleResize');
-    if (!toggleBtn) {
-      toggleBtn = document.createElement('button');
-      toggleBtn.id = 'toggleResize';
-      toggleBtn.textContent = '🔁';
-      Object.assign(toggleBtn.style, {
-        position: 'absolute',
-        bottom: '10px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '36px',
-        height: '36px',
-        borderRadius: '50%',
-        background: '#fff',
-        border: '1px solid #0056b3',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: 'pointer',
-        fontSize: '18px',
-        zIndex: 1000
-      });
-      document.body.appendChild(toggleBtn);
-    }
-
-    // Modo actual: move o resize
-    let mode = 'move';
-    toggleBtn.addEventListener('click', () => {
-      mode = mode === 'move' ? 'resize' : 'move';
+    // Actualizar icono al recibir señal
+    window.addEventListener('toggleMode', () => {
       handle.textContent = mode === 'move' ? '💠' : '↘️';
     });
 
-    // Función de arrastre/resizado
+    // Función de arrastre/resizado según modo
     function setupDrag() {
       let dragging = false;
       let startX, startY, origX, origY, origW, origH;
@@ -107,12 +86,9 @@
       handle.addEventListener('mousedown', e => {
         e.stopPropagation();
         dragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        origX = block.offsetLeft;
-        origY = block.offsetTop;
-        origW = block.offsetWidth;
-        origH = block.offsetHeight;
+        startX = e.clientX; startY = e.clientY;
+        origX = block.offsetLeft; origY = block.offsetTop;
+        origW = block.offsetWidth; origH = block.offsetHeight;
         handle.style.cursor = 'grabbing';
         e.preventDefault();
       });
@@ -136,9 +112,10 @@
         if (dragging) { dragging = false; handle.style.cursor = 'grab'; }
       });
 
-      // Touch
       handle.addEventListener('touchstart', e => {
-        const t = e.touches[0]; e.stopPropagation(); dragging = true;
+        const t = e.touches[0];
+        e.stopPropagation();
+        dragging = true;
         startX = t.clientX; startY = t.clientY;
         origX = block.offsetLeft; origY = block.offsetTop;
         origW = block.offsetWidth; origH = block.offsetHeight;
@@ -146,14 +123,19 @@
       }, { passive: false });
       document.addEventListener('touchmove', e => {
         if (!dragging) return;
-        const t = e.touches[0]; const dx = t.clientX - startX; const dy = t.clientY - startY;
+        const t = e.touches[0];
+        const dx = t.clientX - startX;
+        const dy = t.clientY - startY;
         if (mode === 'move') {
-          block.style.left = origX + dx + 'px'; block.style.top = origY + dy + 'px';
+          block.style.left = origX + dx + 'px';
+          block.style.top = origY + dy + 'px';
         } else {
           const newW = Math.max(origW + dx, margin * 2 + 20);
           const newH = Math.max(origH + dy, margin * 2 + 20);
-          block.style.width = newW + 'px'; block.style.height = newH + 'px';
-          innerBtn.style.width = newW - margin * 2 + 'px'; innerBtn.style.height = newH - margin * 2 + 'px';
+          block.style.width = newW + 'px';
+          block.style.height = newH + 'px';
+          innerBtn.style.width = newW - margin * 2 + 'px';
+          innerBtn.style.height = newH - margin * 2 + 'px';
         }
         e.preventDefault();
       }, { passive: false });
@@ -161,7 +143,5 @@
     }
 
     setupDrag();
-  });
-})();
   });
 })();
