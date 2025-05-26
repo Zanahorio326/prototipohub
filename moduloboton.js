@@ -68,27 +68,26 @@
 
     // Modo actual: 'move' o 'resize'
     let mode = 'move';
-    function toggleMode(e) {
+    let moved = false;
+
+    // Función toggle: solo si no se movió
+    function tryToggle(e) {
       e.stopPropagation();
+      if (moved) { moved = false; return; }
       mode = mode === 'move' ? 'resize' : 'move';
       handle.textContent = mode === 'move' ? '💠' : '↘️';
     }
-    // Toggle mode on pointerup (works with mouse and touch)
-    handle.addEventListener('pointerup', e => {
-      e.stopPropagation();
-      mode = mode === 'move' ? 'resize' : 'move';
-      handle.textContent = mode === 'move' ? '💠' : '↘️';
-    });
-    // Removido toggle en touchend para evitar cambio al arrastrar
+    handle.addEventListener('pointerup', tryToggle);
 
     // Función de arrastre/resizado
     function setupDrag() {
       let dragging = false;
       let startX, startY, origX, origY, origW, origH;
 
-      handle.addEventListener('mousedown', e => {
+      handle.addEventListener('pointerdown', e => {
         e.stopPropagation();
         dragging = true;
+        moved = false;
         startX = e.clientX;
         startY = e.clientY;
         origX = block.offsetLeft;
@@ -99,8 +98,9 @@
         e.preventDefault();
       });
 
-      document.addEventListener('mousemove', e => {
+      document.addEventListener('pointermove', e => {
         if (!dragging) return;
+        moved = true;
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
         if (mode === 'move') {
@@ -116,47 +116,7 @@
         }
       });
 
-      document.addEventListener('mouseup', () => {
-        if (dragging) {
-          dragging = false;
-          handle.style.cursor = 'grab';
-        }
-      });
-
-      // Touch support (toggle only on click, not touchend)
-      handle.addEventListener('touchstart', e => {
-        const t = e.touches[0];
-        e.stopPropagation();
-        dragging = true;
-        startX = t.clientX;
-        startY = t.clientY;
-        origX = block.offsetLeft;
-        origY = block.offsetTop;
-        origW = block.offsetWidth;
-        origH = block.offsetHeight;
-        e.preventDefault();
-      }, { passive: false });
-
-      document.addEventListener('touchmove', e => {
-        if (!dragging) return;
-        const t = e.touches[0];
-        const dx = t.clientX - startX;
-        const dy = t.clientY - startY;
-        if (mode === 'move') {
-          block.style.left = origX + dx + 'px';
-          block.style.top = origY + dy + 'px';
-        } else {
-          const newW = Math.max(origW + dx, margin * 2 + 20);
-          const newH = Math.max(origH + dy, margin * 2 + 20);
-          block.style.width = newW + 'px';
-          block.style.height = newH + 'px';
-          innerBtn.style.width = newW - margin * 2 + 'px';
-          innerBtn.style.height = newH - margin * 2 + 'px';
-        }
-        e.preventDefault();
-      }, { passive: false });
-
-      document.addEventListener('touchend', () => {
+      document.addEventListener('pointerup', () => {
         if (dragging) {
           dragging = false;
           handle.style.cursor = 'grab';
