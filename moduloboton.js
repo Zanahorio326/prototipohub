@@ -1,3 +1,4 @@
+// moduloboton.js
 (function() {
   // Este módulo gestiona la creación del bloque + botón centrado y manejador de arrastre
   const btn = document.getElementById('modBtn');
@@ -23,18 +24,16 @@
     block.style.position = 'absolute';
     block.style.left = x + 'px';
     block.style.top = y + 'px';
-    block.style.padding = '10px';
+    block.style.padding = '10px';        // margen interno
     block.style.minWidth = '80px';
     block.style.minHeight = '40px';
-    block.style.display = 'flex';
+    block.style.display = 'flex';        // centrado
     block.style.alignItems = 'center';
     block.style.justifyContent = 'center';
     block.style.background = 'transparent';
     block.style.border = '1px solid #aaa';
     block.style.borderRadius = '4px';
     block.style.boxSizing = 'border-box';
-    // Asegurar contexto para posición absoluta del handle
-    block.style.position = 'absolute';
 
     // Crear el botón interno
     const innerBtn = document.createElement('button');
@@ -45,9 +44,11 @@
       e.stopPropagation();
       if (innerBtn.dataset.url) window.open(innerBtn.dataset.url, '_blank');
     });
+
+    // Añadir primero el botón
     block.appendChild(innerBtn);
 
-    // Crear el manejador de arrastre en esquina inferior derecha del bloque
+    // Crear el manejador de arrastre (esquina inferior derecha del bloque)
     const handle = document.createElement('div');
     handle.textContent = '💠';
     Object.assign(handle.style, {
@@ -65,10 +66,12 @@
       cursor: 'grab',
       userSelect: 'none',
       fontSize: '14px',
-      boxSizing: 'border-box',
-      zIndex: '10'
+      boxSizing: 'border-box'
     });
+    // Asegurarnos de que block sea el contenedor relativo
+    block.style.position = 'absolute';
     block.appendChild(handle);
+
     canvas.appendChild(block);
 
     // Función para hacer el bloque movible desde el handle (mouse + touch)
@@ -76,7 +79,7 @@
       let isDragging = false;
       let startX, startY, origX, origY;
 
-      // Inicio de arrastre
+      // Inicio de arrastre (ratón)
       handler.addEventListener('mousedown', e => {
         e.stopPropagation();
         isDragging = true;
@@ -110,6 +113,7 @@
         startY = t.clientY;
         origX = parseInt(el.style.left, 10);
         origY = parseInt(el.style.top, 10);
+        handler.style.cursor = 'grabbing';
         e.preventDefault();
       }, { passive: false });
 
@@ -133,3 +137,4 @@
     makeMovable(block, handle);
   });
 })();
+
