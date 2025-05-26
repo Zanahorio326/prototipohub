@@ -13,19 +13,25 @@
       return;
     }
 
-    // Coordenadas fijas (ajustables)
-    const x = 50;
-    const y = 50;
+    // Tamaño base del botón interno
+    const innerBtn = document.createElement('button');
+    innerBtn.textContent = 'Botón';
+    innerBtn.style.cursor = 'pointer';
+    innerBtn.style.padding = '8px 16px';
+    innerBtn.style.pointerEvents = 'auto';
+    innerBtn.dataset.url = '';
+    innerBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (innerBtn.dataset.url) window.open(innerBtn.dataset.url, '_blank');
+    });
 
-    // Crear el bloque externo
+    // Crear bloque contenedor con padding igual al margen deseado
+    const margin = 10;
     const block = document.createElement('div');
     block.className = 'block';
     block.style.position = 'absolute';
-    block.style.left = x + 'px';
-    block.style.top = y + 'px';
-    block.style.padding = '10px';
-    block.style.minWidth = '80px';
-    block.style.minHeight = '40px';
+    block.style.left = '50px';
+    block.style.top = '50px';
     block.style.background = 'transparent';
     block.style.border = '1px solid #aaa';
     block.style.borderRadius = '4px';
@@ -33,30 +39,25 @@
     block.style.display = 'flex';
     block.style.alignItems = 'center';
     block.style.justifyContent = 'center';
-
-    // Crear el botón interno y centrarlo
-    const innerBtn = document.createElement('button');
-    innerBtn.textContent = 'Botón';
-    innerBtn.style.cursor = 'pointer';
-    innerBtn.style.padding = '8px 16px';
-    innerBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      if (innerBtn.dataset.url) window.open(innerBtn.dataset.url, '_blank');
-    });
+    block.style.padding = margin + 'px';
     block.appendChild(innerBtn);
-
-    // Append block first
     canvas.appendChild(block);
 
-    // Crear el handle de arrastre en esquina inferior derecha del bloque
+    // Ajustar tamaño del bloque según tamaño del botón + margen
+    const btnRect = innerBtn.getBoundingClientRect();
+    block.style.width = (btnRect.width + margin * 2) + 'px';
+    block.style.height = (btnRect.height + margin * 2) + 'px';
+
+    // Crear handle en esquina del bloque
+    const handleSize = 24;
     const handle = document.createElement('div');
     handle.textContent = '💠';
     Object.assign(handle.style, {
       position: 'absolute',
-      width: '24px',
-      height: '24px',
-      bottom: '-12px',    // centrar el handle en la esquina inferior derecha
-      right: '-12px',     // centrar el handle en la esquina inferior derecha
+      width: handleSize + 'px',
+      height: handleSize + 'px',
+      bottom: -(handleSize/2) + 'px',
+      right: -(handleSize/2) + 'px',
       borderRadius: '50%',
       background: '#fff',
       border: '1px solid #0056b3',
@@ -70,7 +71,7 @@
     });
     block.appendChild(handle);
 
-    // Función para hacer el bloque movible usando solo el handle
+    // Mover bloque con handle (mouse + touch)
     function makeMovable(el, handler) {
       let isDragging = false;
       let startX, startY, origX, origY;
@@ -122,7 +123,6 @@
       });
     }
 
-    // Hacer el bloque movible usando solo el handle
     makeMovable(block, handle);
   });
 })();
