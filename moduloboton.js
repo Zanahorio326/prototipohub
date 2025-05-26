@@ -41,16 +41,23 @@
     const handle = document.createElement('div');
     handle.textContent = '💠';
     Object.assign(handle.style, {
-      position: 'absolute', width: '24px', height: '24px',
-      bottom: -(12) + 'px', right: -(12) + 'px', borderRadius: '50%',
+      position: 'absolute', width: handleSize + 'px', height: handleSize + 'px',
+      bottom: -(handleSize/2) + 'px', right: -(handleSize/2) + 'px', borderRadius: '50%',
       background: '#fff', border: '1px solid #0056b3', display: 'flex',
       alignItems: 'center', justifyContent: 'center', cursor: 'grab',
-      userSelect: 'none', fontSize: '14px', boxSizing: 'border-box'
+      userSelect: 'none', fontSize: '14px', boxSizing: 'border-box',
+      zIndex: '100'
     });
     block.appendChild(handle);
 
     // Toggle handle icon on click
     handle.addEventListener('click', e => {
+      e.stopPropagation();
+      handleMode = handleMode === 'move' ? 'resize' : 'move';
+      handle.textContent = handleMode === 'move' ? '💠' : '↘️';
+    });
+    // También toggle al presionar (pointerdown)
+    handle.addEventListener('pointerdown', e => {
       e.stopPropagation();
       handleMode = handleMode === 'move' ? 'resize' : 'move';
       handle.textContent = handleMode === 'move' ? '💠' : '↘️';
