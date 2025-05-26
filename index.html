@@ -13,13 +13,15 @@
       position: relative;
       font-family: sans-serif;
     }
-    /* Mesa (lienzo) ocupa casi toda la pantalla con márgenes mayores */
+    /* Margen uniforme */
+    :root { --m: 10px; --toggle-h: 40px; }
+    /* Mesa (lienzo) con márgenes iguales y espacio para toggle */
     #canvas {
       position: absolute;
-      top: 60px;    /* deja espacio para buscador/enlaces arriba */
-      left: 20px;
-      right: 20px;
-      bottom: 100px; /* deja espacio para el toggle y controles abajo */
+      top: var(--m);
+      left: var(--m);
+      right: var(--m);
+      bottom: calc(var(--m) + var(--toggle-h) + var(--m));
       background: white;
       border: 2px dashed #ccc;
       overflow: auto;
@@ -27,11 +29,11 @@
     /* Botón de cambio de modo (🔁) */
     #toggleModeBtn {
       position: absolute;
-      bottom: 40px; /* desplazado un poco más arriba */
+      bottom: var(--m);
       left: 50%;
       transform: translateX(-50%);
-      width: 40px;
-      height: 40px;
+      width: var(--toggle-h);
+      height: var(--toggle-h);
       font-size: 24px;
       display: flex;
       align-items: center;
@@ -46,10 +48,10 @@
     /* Botón puerta flotante */
     #door {
       position: absolute;
-      top: 80px;    /* también baja para no quedar bajo la barra de búsqueda */
-      left: 40px;
-      width: 40px;
-      height: 40px;
+      top: var(--m);
+      left: var(--m);
+      width: var(--toggle-h);
+      height: var(--toggle-h);
       font-size: 24px;
       display: flex;
       align-items: center;
@@ -119,17 +121,16 @@
       // Botón de toggle global
       const toggleBtn = document.getElementById('toggleModeBtn');
       toggleBtn.addEventListener('click', () => {
-        // Señal a los módulos para alternar modo
         window.dispatchEvent(new CustomEvent('toggleMode'));
       });
 
-      // Color contrastante para el panel
+      // Helpers para color del panel
       function invertColor(color) {
         const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
         if (!m) return '#000';
-        const r = (255 - parseInt(m[1], 16)).toString(16).padStart(2, '0');
-        const g = (255 - parseInt(m[2], 16)).toString(16).padStart(2, '0');
-        const b = (255 - parseInt(m[3], 16)).toString(16).padStart(2, '0');
+        const r = (255 - parseInt(m[1],16)).toString(16).padStart(2,'0');
+        const g = (255 - parseInt(m[2],16)).toString(16).padStart(2,'0');
+        const b = (255 - parseInt(m[3],16)).toString(16).padStart(2,'0');
         return `#${r}${g}${b}`;
       }
       function computePanelBg() {
@@ -152,71 +153,42 @@
         });
       }
 
-      // Toggle panel al hacer click en puerta
+      // Toggle panel
       door.addEventListener('click', () => {
         if (dragging) return;
         const rect = door.getBoundingClientRect();
-        if (isOpen) {
-          closePanel();
-        } else {
-          const mid = window.innerWidth / 2;
+        if (isOpen) closePanel();
+        else {
+          const mid = window.innerWidth/2;
           let left, width;
-          if (rect.left > mid) {
-            left = 0;
-            width = rect.left;
-          } else {
-            left = rect.right;
-            width = window.innerWidth - rect.right;
-          }
-          panel.style.display = 'flex';
-          panel.style.top = rect.top + 'px';
-          panel.style.left = left + 'px';
-          panel.style.height = rect.height + 'px';
-          panel.style.width = width + 'px';
-          panel.style.background = computePanelBg();
-          panel.innerHTML = '<button id="modBtn">🔘<br>Botón</button>';
-          const script = document.createElement('script');
-          script.src = 'https://zanahorio326.github.io/prototipohub/moduloboton.js';
+          if (rect.left > mid) { left=0; width=rect.left; }
+          else { left=rect.right; width=window.innerWidth-rect.right; }
+          panel.style.display='flex';
+          panel.style.top = rect.top+'px';
+          panel.style.left= left+'px';
+          panel.style.height=rect.height+'px';
+          panel.style.width=width+'px';
+          panel.style.background=computePanelBg();
+          panel.innerHTML='<button id="modBtn">🔘<br>Botón</button>';
+          const script=document.createElement('script');
+          script.src='https://zanahorio326.github.io/prototipohub/moduloboton.js';
           panel.appendChild(script);
-          door.textContent = '📖';
-          isOpen = true;
+          door.textContent='📖';
+          isOpen=true;
         }
       });
-      door.addEventListener('pointerup', () => { if (isOpen) closePanel(); });
+      door.addEventListener('pointerup',()=>{ if(isOpen)closePanel(); });
 
-      function startDrag(x,y) {
-        if (isOpen) closePanel();
-        dragging = true;
-        offsetX = x - door.offsetLeft;
-        offsetY = y - door.offsetTop;
-        door.style.cursor = 'grabbing';
-      }
-      function duringDrag(x,y) {
-        if (!dragging) return;
-        let nx = x - offsetX, ny = y - offsetY;
-        nx = Math.max(0, Math.min(nx, window.innerWidth - door.offsetWidth));
-        ny = Math.max(0, Math.min(ny, window.innerHeight - door.offsetHeight));
-        door.style.left = nx + 'px';
-        door.style.top = ny + 'px';
-      }
-      function endDrag() {
-        if (dragging) {
-          dragging = false;
-          door.style.cursor = 'grab';
-        }
-      }
+      function startDrag(x,y){ if(isOpen)closePanel(); dragging=true; offsetX=x-door.offsetLeft; offsetY=y-door.offsetTop; door.style.cursor='grabbing'; }
+      function duringDrag(x,y){ if(!dragging)return; let nx=x-offsetX, ny=y-offsetY; nx=Math.max(0,Math.min(nx,window.innerWidth-door.offsetWidth)); ny=Math.max(0,Math.min(ny,window.innerHeight-door.offsetHeight)); door.style.left=nx+'px'; door.style.top=ny+'px'; }
+      function endDrag(){ if(dragging){ dragging=false; door.style.cursor='grab'; }}
 
-      // Eventos de arrastre para la puerta
-      door.addEventListener('mousedown', e => startDrag(e.clientX, e.clientY));
-      document.addEventListener('mousemove', e => duringDrag(e.clientX, e.clientY));
-      document.addEventListener('mouseup', endDrag);
-      door.addEventListener('touchstart', e => {
-        const t = e.touches[0]; startDrag(t.clientX, t.clientY);
-      }, { passive: false });
-      document.addEventListener('touchmove', e => {
-        const t = e.touches[0]; duringDrag(t.clientX, t.clientY); e.preventDefault();
-      }, { passive: false });
-      document.addEventListener('touchend', endDrag);
+      door.addEventListener('mousedown',e=>startDrag(e.clientX,e.clientY));
+      document.addEventListener('mousemove',e=>duringDrag(e.clientX,e.clientY));
+      document.addEventListener('mouseup',endDrag);
+      door.addEventListener('touchstart',e=>{const t=e.touches[0];startDrag(t.clientX,t.clientY);}, {passive:false});
+      document.addEventListener('touchmove',e=>{const t=e.touches[0];duringDrag(t.clientX,t.clientY);e.preventDefault();},{passive:false});
+      document.addEventListener('touchend',endDrag);
     })();
   </script>
 </body>
