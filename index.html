@@ -13,10 +13,29 @@
       top: 20px;
       left: 20px;
       right: 20px;
-      bottom: 20px;
+      bottom: 60px; /* Deja espacio para el botón de toggle */
       background: white;
       border: 2px dashed #ccc;
       overflow: auto;
+    }
+    /* Botón de cambio de modo (🔁) */
+    #toggleModeBtn {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 40px;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+      z-index: 10;
     }
     /* Botón puerta flotante */
     #door {
@@ -45,7 +64,7 @@
       overflow: hidden;
       transition: width 0.3s ease;
       z-index: 5;
-      display: none; /* oculto inicialmente */
+      display: none;
       align-items: center;
       padding-left: 10px;
       background: transparent;
@@ -77,6 +96,8 @@
   <div id="panel"></div>
   <!-- Icono de puerta cambia: cerrado 📕, abierto 📖 -->
   <div id="door">📕</div>
+  <!-- Botón global para toggle de modo en módulos -->
+  <div id="toggleModeBtn">🔁</div>
 
   <script>
     (function(){
@@ -86,6 +107,13 @@
       let isOpen = false;
       let dragging = false;
       let offsetX = 0, offsetY = 0;
+
+      // Botón de toggle global
+      const toggleBtn = document.getElementById('toggleModeBtn');
+      toggleBtn.addEventListener('click', () => {
+        // Enviar señal a los módulos para alternar modo
+        window.dispatchEvent(new CustomEvent('toggleMode'));
+      });
 
       // Calcular color contrastante
       function invertColor(color) {
@@ -108,11 +136,10 @@
         isOpen = false;
         panel.style.width = '0';
         panel.style.background = 'transparent';
-        // Esperar a terminar animación antes de ocultar contenido e icono
         panel.addEventListener('transitionend', function handler() {
           panel.style.display = 'none';
           panel.innerHTML = '';
-          door.textContent = '📕'; // icono cerrado tras cierre
+          door.textContent = '📕';
           panel.removeEventListener('transitionend', handler);
         });
       }
@@ -121,18 +148,14 @@
       door.addEventListener('click', () => {
         if (dragging) return;
         const doorRect = door.getBoundingClientRect();
-        if (isOpen) {
-          closePanel();
-        } else {
-          // Abrir panel hacia el lado con más espacio
+        if (isOpen) closePanel();
+        else {
           const middle = window.innerWidth / 2;
           let panelLeft, panelWidth;
           if (doorRect.left > middle) {
-            // Abrir hacia la izquierda
             panelLeft = 0;
             panelWidth = doorRect.left;
           } else {
-            // Abrir hacia la derecha
             panelLeft = doorRect.right;
             panelWidth = window.innerWidth - doorRect.right;
           }
@@ -146,15 +169,11 @@
           const script = document.createElement('script');
           script.src = 'https://zanahorio326.github.io/prototipohub/moduloboton.js';
           panel.appendChild(script);
-          door.textContent = '📖'; // icono abierto
+          door.textContent = '📖';
           isOpen = true;
         }
       });
-      
-      // Ensure single click or pointerup closes panel immediately
-      door.addEventListener('pointerup', () => {
-        if (isOpen) closePanel();
-      });
+      door.addEventListener('pointerup', () => { if (isOpen) closePanel(); });
 
       function startDrag(x, y) {
         if (isOpen) closePanel();
@@ -172,28 +191,13 @@
         door.style.left = nx + 'px';
         door.style.top = ny + 'px';
       }
-      function endDrag() {
-        if (dragging) {
-          dragging = false;
-          door.style.cursor = 'grab';
-        }
-      }
+      function endDrag() { if (dragging) { dragging = false; door.style.cursor = 'grab'; } }
 
-      // Mouse events
       door.addEventListener('mousedown', e => startDrag(e.clientX, e.clientY));
       document.addEventListener('mousemove', e => duringDrag(e.clientX, e.clientY));
       document.addEventListener('mouseup', endDrag);
-
-      // Touch events
-      door.addEventListener('touchstart', e => {
-        const t = e.touches[0];
-        startDrag(t.clientX, t.clientY);
-      });
-      document.addEventListener('touchmove', e => {
-        const t = e.touches[0];
-        duringDrag(t.clientX, t.clientY);
-        e.preventDefault();
-      }, { passive: false });
+      door.addEventListener('touchstart', e => { const t=e.touches[0]; startDrag(t.clientX,t.clientY); }, { passive: false });
+      document.addEventListener('touchmove', e => { const t=e.touches[0]; duringDrag(t.clientX,t.clientY); e.preventDefault(); }, { passive: false });
       document.addEventListener('touchend', endDrag);
     })();
   </script>
