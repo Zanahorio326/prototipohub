@@ -55,8 +55,8 @@
       position: 'absolute',
       width: '24px',
       height: '24px',
-      bottom: '0px',    // esquina exterior del bloque
-      right: '0px',     // esquina exterior del bloque
+      bottom: '-12px',    // centrar el handle en la esquina inferior derecha
+      right: '-12px',     // centrar el handle en la esquina inferior derecha
       borderRadius: '50%',
       background: '#fff',
       border: '1px solid #0056b3',
