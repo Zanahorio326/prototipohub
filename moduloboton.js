@@ -73,7 +73,12 @@
       mode = mode === 'move' ? 'resize' : 'move';
       handle.textContent = mode === 'move' ? '💠' : '↘️';
     }
-    handle.addEventListener('click', toggleMode);
+    // Toggle mode on pointerup (works with mouse and touch)
+    handle.addEventListener('pointerup', e => {
+      e.stopPropagation();
+      mode = mode === 'move' ? 'resize' : 'move';
+      handle.textContent = mode === 'move' ? '💠' : '↘️';
+    });
     // Removido toggle en touchend para evitar cambio al arrastrar
 
     // Función de arrastre/resizado
