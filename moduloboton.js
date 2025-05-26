@@ -33,6 +33,8 @@
     block.style.border = '1px solid #aaa';
     block.style.borderRadius = '4px';
     block.style.boxSizing = 'border-box';
+    // Asegurar contexto para posición absoluta del handle
+    block.style.position = 'absolute';
 
     // Crear el botón interno
     const innerBtn = document.createElement('button');
@@ -45,7 +47,7 @@
     });
     block.appendChild(innerBtn);
 
-    // Crear el manejador de arrastre (esquina inferior derecha)
+    // Crear el manejador de arrastre en esquina inferior derecha del bloque
     const handle = document.createElement('div');
     handle.textContent = '💠';
     Object.assign(handle.style, {
@@ -63,11 +65,10 @@
       cursor: 'grab',
       userSelect: 'none',
       fontSize: '14px',
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      zIndex: '10'
     });
-    block.style.position = 'absolute';
     block.appendChild(handle);
-
     canvas.appendChild(block);
 
     // Función para hacer el bloque movible desde el handle (mouse + touch)
