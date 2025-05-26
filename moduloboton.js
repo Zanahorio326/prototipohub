@@ -74,7 +74,7 @@
       handle.textContent = mode === 'move' ? '💠' : '↘️';
     }
     handle.addEventListener('click', toggleMode);
-    handle.addEventListener('touchend', toggleMode, { passive: false });
+    // Removido toggle en touchend para evitar cambio al arrastrar
 
     // Función de arrastre/resizado
     function setupDrag() {
@@ -118,7 +118,7 @@
         }
       });
 
-      // Touch support
+      // Touch support (toggle only on click, not touchend)
       handle.addEventListener('touchstart', e => {
         const t = e.touches[0];
         e.stopPropagation();
