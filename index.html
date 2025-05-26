@@ -30,8 +30,7 @@
     #toggleModeBtn {
       position: absolute;
       bottom: var(--m);
-      /* centro horizontal con límite para no salirse */
-      left: clamp(var(--m), 50%, calc(100% - var(--toggle-h) - var(--m)));
+      left: 50%;
       transform: translateX(-50%);
       width: var(--toggle-h);
       height: var(--toggle-h);
@@ -115,27 +114,35 @@
       const door = document.getElementById('door');
       const panel = document.getElementById('panel');
       const canvas = document.getElementById('canvas');
+      const toggleBtn = document.getElementById('toggleModeBtn');
       let isOpen = false;
       let dragging = false;
       let offsetX = 0, offsetY = 0;
 
-      // Botón de toggle global
-      const toggleBtn = document.getElementById('toggleModeBtn');
+      // Emitir señal global al pulsar 🔁
       toggleBtn.addEventListener('click', () => {
         window.dispatchEvent(new CustomEvent('toggleMode'));
       });
 
-      // Helpers para color del panel
-      function invertColor(color) {
-        const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
+      // Mantener dentro de márgenes
+      function clampToggle() {
+        const m = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--m'));
+        const h = toggleBtn.offsetWidth;
+        let left = toggleBtn.offsetLeft;
+        if (left < m) toggleBtn.style.left = m + 'px';
+        if (left + h > window.innerWidth - m) toggleBtn.style.left = (window.innerWidth - m - h) + 'px';
+      }
+      window.addEventListener('resize', clampToggle);
+      clampToggle();
+
+      // Color del panel
+      function invertColor(c) {
+        const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(c);
         if (!m) return '#000';
-        const r = (255 - parseInt(m[1],16)).toString(16).padStart(2,'0');
-        const g = (255 - parseInt(m[2],16)).toString(16).padStart(2,'0');
-        const b = (255 - parseInt(m[3],16)).toString(16).padStart(2,'0');
-        return `#${r}${g}${b}`;
+        return '#' + [1,2,3].map(i => (255 - parseInt(m[i],16)).toString(16).padStart(2,'0')).join('');
       }
       function computePanelBg() {
-        const bg = window.getComputedStyle(canvas).backgroundColor;
+        const bg = getComputedStyle(canvas).backgroundColor;
         const rgb = bg.match(/\d+/g);
         if (!rgb) return '#000';
         const hex = '#' + rgb.slice(0,3).map(x=>parseInt(x).toString(16).padStart(2,'0')).join('');
@@ -146,43 +153,44 @@
         isOpen = false;
         panel.style.width = '0';
         panel.style.background = 'transparent';
-        panel.addEventListener('transitionend', function handler() {
+        panel.addEventListener('transitionend', function h(){
           panel.style.display = 'none';
           panel.innerHTML = '';
           door.textContent = '📕';
-          panel.removeEventListener('transitionend', handler);
+          panel.removeEventListener('transitionend', h);
         });
       }
 
       // Toggle panel
       door.addEventListener('click', () => {
         if (dragging) return;
-        const rect = door.getBoundingClientRect();
+        const r = door.getBoundingClientRect();
         if (isOpen) closePanel();
         else {
           const mid = window.innerWidth/2;
           let left, width;
-          if (rect.left > mid) { left=0; width=rect.left; }
-          else { left=rect.right; width=window.innerWidth-rect.right; }
+          if (r.left > mid) { left=0; width=r.left; }
+          else { left=r.right; width=window.innerWidth-r.right; }
           panel.style.display='flex';
-          panel.style.top = rect.top+'px';
-          panel.style.left= left+'px';
-          panel.style.height=rect.height+'px';
+          panel.style.top=r.top+'px';
+          panel.style.left=left+'px';
+          panel.style.height=r.height+'px';
           panel.style.width=width+'px';
           panel.style.background=computePanelBg();
           panel.innerHTML='<button id="modBtn">🔘<br>Botón</button>';
-          const script=document.createElement('script');
-          script.src='https://zanahorio326.github.io/prototipohub/moduloboton.js';
-          panel.appendChild(script);
+          const s=document.createElement('script');
+          s.src='https://zanahorio326.github.io/prototipohub/moduloboton.js';
+          panel.appendChild(s);
           door.textContent='📖';
           isOpen=true;
         }
       });
       door.addEventListener('pointerup',()=>{ if(isOpen)closePanel(); });
 
+      // Arrastre puerta
       function startDrag(x,y){ if(isOpen)closePanel(); dragging=true; offsetX=x-door.offsetLeft; offsetY=y-door.offsetTop; door.style.cursor='grabbing'; }
-      function duringDrag(x,y){ if(!dragging)return; let nx=x-offsetX, ny=y-offsetY; nx=Math.max(0,Math.min(nx,window.innerWidth-door.offsetWidth)); ny=Math.max(0,Math.min(ny,window.innerHeight-door.offsetHeight)); door.style.left=nx+'px'; door.style.top=ny+'px'; }
-      function endDrag(){ if(dragging){ dragging=false; door.style.cursor='grab'; }}
+      function duringDrag(x,y){ if(!dragging)return; let nx=x-offsetX, ny=y-offsetY; nx=Math.max(0,Math.min(nx,window.innerWidth-door.offsetWidth)); ny=Math.max(0,Math.min(ny,window.innerHeight-door.offsetHeight)); door.style.left=nx+'px'; door.style.top=ny+'px'; clampToggle(); }
+      function endDrag(){ if(dragging){ dragging=false; door.style.cursor='grab'; clampToggle(); } }
 
       door.addEventListener('mousedown',e=>startDrag(e.clientX,e.clientY));
       document.addEventListener('mousemove',e=>duringDrag(e.clientX,e.clientY));
