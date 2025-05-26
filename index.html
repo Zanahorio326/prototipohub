@@ -30,7 +30,8 @@
     #toggleModeBtn {
       position: absolute;
       bottom: var(--m);
-      left: 50%;
+      /* centro horizontal con límite para no salirse */
+      left: clamp(var(--m), 50%, calc(100% - var(--toggle-h) - var(--m)));
       transform: translateX(-50%);
       width: var(--toggle-h);
       height: var(--toggle-h);
