@@ -1,130 +1,138 @@
 (function() {
-  // Módulo para bloque + handle multi-toggle (mover/resize y paint/brush)
+  // Módulo para crear bloque con botón y cambiar iconos según modo principal
   const btn = document.getElementById('modBtn');
   if (!btn) return console.warn('modBtn no encontrado');
 
-  // Estados generales
-  let selector = 'toggleMode';     // 'toggleMode' o 'alternateAction'
-  let mode = 'move';              // 'move' | 'resize'
-  let paintMode = 'paint';        // 'paint' | 'brush'
+  // Estados
+  let selector = 'toggleMode';        // 'toggleMode' o 'alternateAction'
+  let toggleState = '💠';            // 💠 o ↘️
+  let alternateState = '🎨';         // 🎨 o 🖌️
 
-  // Escuchar señales globales
-  window.addEventListener('toggleMode', () => { selector = 'toggleMode'; });
-  window.addEventListener('alternateAction', () => { selector = 'alternateAction'; });
+  // Escuchar botones globales
+  window.addEventListener('toggleMode', () => {
+    selector = 'toggleMode';
+    toggleState = '💠';           // reiniciar al primer icono del par
+    updateIcon();
+  });
+  window.addEventListener('alternateAction', () => {
+    selector = 'alternateAction';
+    alternateState = '🎨';        // reiniciar al primer icono del par
+    updateIcon();
+  });
 
   btn.addEventListener('click', () => {
     const canvas = document.getElementById('canvas');
     if (!canvas) return console.warn('canvas no encontrado');
 
     const margin = 10;
-    // Crear botón interno
+    // Botón interior
     const innerBtn = document.createElement('button');
     innerBtn.textContent = 'Botón';
     Object.assign(innerBtn.style, { cursor: 'pointer', padding: '8px 16px', boxSizing: 'border-box' });
-    innerBtn.dataset.url = '';
     innerBtn.addEventListener('click', e => e.stopPropagation());
 
-    // Crear bloque contenedor
+    // Contenedor
     const block = document.createElement('div');
     block.className = 'block';
     Object.assign(block.style, {
       position: 'absolute', left: '50px', top: '50px', padding: margin + 'px',
       background: 'transparent', border: '1px solid #aaa', borderRadius: '4px',
-      boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center'
+      display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box'
     });
     block.appendChild(innerBtn);
     canvas.appendChild(block);
 
     // Ajustar tamaño según contenido
-    const btnRect = innerBtn.getBoundingClientRect();
-    block.style.width = btnRect.width + margin * 2 + 'px';
-    block.style.height = btnRect.height + margin * 2 + 'px';
+    const rect = innerBtn.getBoundingClientRect();
+    block.style.width = rect.width + margin*2 + 'px';
+    block.style.height = rect.height + margin*2 + 'px';
 
-    // Crear handle multifuncional
-    const handleSize = 24;
+    // Icono lateral
     const handle = document.createElement('div');
-    function updateHandleIcon() {
-      if (selector === 'toggleMode') {
-        handle.textContent = (mode === 'move' ? '💠' : '↘️');
-      } else {
-        handle.textContent = (paintMode === 'paint' ? '🎨' : '🖌️');
-      }
-    }
     Object.assign(handle.style, {
-      position: 'absolute', width: handleSize + 'px', height: handleSize + 'px',
-      bottom: -(handleSize / 2) + 'px', right: -(handleSize / 2) + 'px',
-      borderRadius: '50%', background: '#fff', border: '1px solid #0056b3',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      cursor: 'grab', userSelect: 'none', fontSize: '14px', boxSizing: 'border-box'
+      position: 'absolute', width: '24px', height: '24px',
+      bottom: '-12px', right: '-12px', borderRadius: '50%',
+      background: '#fff', border: '1px solid #0056b3', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+      userSelect: 'none', fontSize: '14px', boxSizing: 'border-box'
     });
     block.appendChild(handle);
-    updateHandleIcon();
 
-    // Cambiar estado correspondiente al click en handle
+    // Actualizar icono según estado
+    function updateIcon() {
+      handle.textContent = selector === 'toggleMode' ? toggleState : alternateState;
+    }
+    updateIcon();
+
+    // Pulsar icono para alternar dentro del par actual
     handle.addEventListener('click', e => {
       e.stopPropagation();
       if (selector === 'toggleMode') {
-        mode = (mode === 'move' ? 'resize' : 'move');
+        toggleState = toggleState === '💠' ? '↘️' : '💠';
       } else {
-        paintMode = (paintMode === 'paint' ? 'brush' : 'paint');
+        alternateState = alternateState === '🎨' ? '🖌️' : '🎨';
       }
-      updateHandleIcon();
+      updateIcon();
     });
 
-    // Mantener icono actualizado al cambiar selector
-    window.addEventListener('toggleMode', updateHandleIcon);
-    window.addEventListener('alternateAction', updateHandleIcon);
+    // Arrastre y redimensionamiento solo en modo toggleMode
+    let dragging = false, sx, sy, ox, oy, ow, oh;
+    handle.addEventListener('mousedown', e => {
+      if (selector !== 'toggleMode') return;
+      e.stopPropagation(); dragging = true;
+      sx = e.clientX; sy = e.clientY;
+      ox = block.offsetLeft; oy = block.offsetTop;
+      ow = block.offsetWidth; oh = block.offsetHeight;
+      handle.style.cursor = 'grabbing'; e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      // mover o redimensionar según toggleState
+      if (toggleState === '💠') {
+        block.style.left = ox + dx + 'px';
+        block.style.top = oy + dy + 'px';
+      } else {
+        const nw = Math.max(ow + dx, margin*2 + 20);
+        const nh = Math.max(oh + dy, margin*2 + 20);
+        block.style.width = nw + 'px';
+        block.style.height = nh + 'px';
+        innerBtn.style.width = nw - margin*2 + 'px';
+        innerBtn.style.height = nh - margin*2 + 'px';
+      }
+    });
+    document.addEventListener('mouseup', () => {
+      if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
+    });
 
-    // Arrastrar / Redimensionar según modo
-    function setupDrag() {
-      let dragging = false; let startX, startY, origX, origY, origW, origH;
-      handle.addEventListener('mousedown', e => {
-        e.stopPropagation(); dragging = true;
-        startX = e.clientX; startY = e.clientY;
-        origX = block.offsetLeft; origY = block.offsetTop;
-        origW = block.offsetWidth; origH = block.offsetHeight;
-        handle.style.cursor = 'grabbing'; e.preventDefault();
-      });
-      document.addEventListener('mousemove', e => {
-        if (!dragging) return;
-        const dx = e.clientX - startX, dy = e.clientY - startY;
-        if (selector === 'toggleMode' && mode === 'move') {
-          block.style.left = origX + dx + 'px'; block.style.top = origY + dy + 'px';
-        } else if (selector === 'toggleMode' && mode === 'resize') {
-          const newW = Math.max(origW + dx, margin * 2 + 20);
-          const newH = Math.max(origH + dy, margin * 2 + 20);
-          block.style.width = newW + 'px'; block.style.height = newH + 'px';
-          innerBtn.style.width = newW - margin * 2 + 'px';
-          innerBtn.style.height = newH - margin * 2 + 'px';
-        }
-      });
-      document.addEventListener('mouseup', () => { if (dragging) { dragging = false; handle.style.cursor = 'grab'; }});
-
-      // Touch equivalente
-      handle.addEventListener('touchstart', e => {
-        const t = e.touches[0]; e.stopPropagation(); dragging = true;
-        startX = t.clientX; startY = t.clientY;
-        origX = block.offsetLeft; origY = block.offsetTop;
-        origW = block.offsetWidth; origH = block.offsetHeight;
-        e.preventDefault();
-      }, { passive: false });
-      document.addEventListener('touchmove', e => {
-        if (!dragging) return;
-        const t = e.touches[0]; const dx = t.clientX - startX, dy = t.clientY - startY;
-        if (selector === 'toggleMode' && mode === 'move') {
-          block.style.left = origX + dx + 'px'; block.style.top = origY + dy + 'px';
-        } else if (selector === 'toggleMode' && mode === 'resize') {
-          const newW = Math.max(origW + dx, margin * 2 + 20);
-          const newH = Math.max(origH + dy, margin * 2 + 20);
-          block.style.width = newW + 'px'; block.style.height = newH + 'px';
-          innerBtn.style.width = newW - margin * 2 + 'px';
-          innerBtn.style.height = newH - margin * 2 + 'px';
-        }
-        e.preventDefault();
-      }, { passive: false });
-      document.addEventListener('touchend', () => { if (dragging) { dragging = false; handle.style.cursor = 'grab'; }});
-    }
-
-    setupDrag();
+    // Táctil equivalente
+    handle.addEventListener('touchstart', e => {
+      if (selector !== 'toggleMode') return;
+      const t = e.touches[0]; e.stopPropagation(); dragging = true;
+      sx = t.clientX; sy = t.clientY;
+      ox = block.offsetLeft; oy = block.offsetTop;
+      ow = block.offsetWidth; oh = block.offsetHeight;
+      e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      const t = e.touches[0];
+      const dx = t.clientX - sx, dy = t.clientY - sy;
+      if (toggleState === '💠') {
+        block.style.left = ox + dx + 'px';
+        block.style.top = oy + dy + 'px';
+      } else {
+        const nw = Math.max(ow + dx, margin*2 + 20);
+        const nh = Math.max(oh + dy, margin*2 + 20);
+        block.style.width = nw + 'px';
+        block.style.height = nh + 'px';
+        innerBtn.style.width = nw - margin*2 + 'px';
+        innerBtn.style.height = nh - margin*2 + 'px';
+      }
+      e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchend', () => {
+      if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
+    });
   });
 })();
