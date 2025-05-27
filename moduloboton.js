@@ -1,13 +1,21 @@
 (function() {
-  // Este módulo gestiona la creación del bloque + botón centrado con mover/resize basado en señal global
+  // Este módulo gestiona la creación del bloque + botón centrado con mover/resize y pintado/brush basado en señales globales
   const btn = document.getElementById('modBtn');
   if (!btn) return console.warn('modBtn no encontrado');
 
-  // Estado de modo: 'move' o 'resize'
-  let mode = 'move';
-  // Escuchar señal global de cambio de modo
+  // Estados globales
+  let mode = 'move';              // 'move' o 'resize'
+  let paintMode = 'paint';        // 'paint' o 'brush'
+
+  // Escuchar señales globales
   window.addEventListener('toggleMode', () => {
     mode = mode === 'move' ? 'resize' : 'move';
+    // Aquí podrías actualizar el icono de handle si quisieras
+  });
+  window.addEventListener('alternateAction', () => {
+    paintMode = paintMode === 'paint' ? 'brush' : 'paint';
+    // Aquí podrías propagar el estado a componentes internos
+    console.log('paintMode ahora:', paintMode);
   });
 
   btn.addEventListener('click', () => {
@@ -72,13 +80,12 @@
       boxSizing: 'border-box'
     });
     block.appendChild(handle);
-
-    // Actualizar icono al recibir señal
+    // Actualizar icono cuando cambie mode
     window.addEventListener('toggleMode', () => {
       handle.textContent = mode === 'move' ? '💠' : '↘️';
     });
 
-    // Función de arrastre/resizado según modo
+    // Función de arrastre/resizado según mode
     function setupDrag() {
       let dragging = false;
       let startX, startY, origX, origY, origW, origH;
@@ -113,9 +120,7 @@
       });
 
       handle.addEventListener('touchstart', e => {
-        const t = e.touches[0];
-        e.stopPropagation();
-        dragging = true;
+        const t = e.touches[0]; e.stopPropagation(); dragging = true;
         startX = t.clientX; startY = t.clientY;
         origX = block.offsetLeft; origY = block.offsetTop;
         origW = block.offsetWidth; origH = block.offsetHeight;
