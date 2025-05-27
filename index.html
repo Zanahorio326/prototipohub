@@ -14,24 +14,24 @@
       font-family: sans-serif;
     }
     /* Márgenes uniformes */
-    :root { --m: 10px; --toggle-h: 40px; }
+    :root { --m: 10px; --btn-h: 40px; }
     /* Canvas con espacio dinámico para UI */
     #canvas {
       position: absolute;
       top: var(--m);
       left: var(--m);
       right: var(--m);
-      bottom: calc(var(--m)); /* se ajusta vía JS */
+      bottom: var(--m); /* ajustado dinámicamente */
       background: white;
       border: 2px dashed #ccc;
       overflow: auto;
       transition: bottom 0.1s ease;
     }
-    /* Botón toggle de modo 🔁 */
-    #toggleModeBtn {
+    /* Botones de acción */
+    .action-btn {
       position: absolute;
-      width: var(--toggle-h);
-      height: var(--toggle-h);
+      width: var(--btn-h);
+      height: var(--btn-h);
       font-size: 24px;
       display: flex;
       align-items: center;
@@ -48,8 +48,8 @@
       position: absolute;
       top: var(--m);
       left: var(--m);
-      width: var(--toggle-h);
-      height: var(--toggle-h);
+      width: var(--btn-h);
+      height: var(--btn-h);
       font-size: 24px;
       display: flex;
       align-items: center;
@@ -101,7 +101,8 @@
   <div id="canvas"></div>
   <div id="panel"></div>
   <div id="door">📕</div>
-  <div id="toggleModeBtn">🔁</div>
+  <div id="toggleModeBtn" class="action-btn">🔁</div>
+  <div id="alternateBtn" class="action-btn">🔄</div>
 
   <script>
     (function(){
@@ -109,33 +110,38 @@
       const panel = document.getElementById('panel');
       const canvas = document.getElementById('canvas');
       const toggleBtn = document.getElementById('toggleModeBtn');
+      const altBtn = document.getElementById('alternateBtn');
       let isOpen = false, dragging = false;
       let offsetX = 0, offsetY = 0;
 
-      // Ajustar posición del toggle y bottom del canvas
+      // Ajustar posición de botones y bottom del canvas
       function adjustLayout() {
         const m = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--m'));
         const h = toggleBtn.offsetHeight;
-        // Centrar horizontalmente
-        let centerX = window.innerWidth/2 - h/2;
-        centerX = Math.max(m, Math.min(centerX, window.innerWidth - m - h));
-        toggleBtn.style.left = centerX + 'px';
-        // Fijar justo encima del borde inferior
-        let y = window.innerHeight - m - h;
-        toggleBtn.style.top = y + 'px';
-        // Ajustar bottom del canvas para tocar justo el toggle
-        let canvasBottom = window.innerHeight - y + m;
-        canvas.style.bottom = canvasBottom + 'px';
+        // posiciones horizontales al 25% y 75%
+        const x1 = window.innerWidth*0.25 - h/2;
+        const x2 = window.innerWidth*0.75 - h/2;
+        toggleBtn.style.left = `${Math.max(m, Math.min(x1, window.innerWidth-m-h))}px`;
+        altBtn.style.left = `${Math.max(m, Math.min(x2, window.innerWidth-m-h))}px`;
+        // ambos al mismo vertical
+        const y = window.innerHeight - m - h;
+        toggleBtn.style.top = `${y}px`;
+        altBtn.style.top = `${y}px`;
+        // ajustar canvas bottom
+        canvas.style.bottom = `${window.innerHeight - y + m}px`;
       }
       window.addEventListener('resize', adjustLayout);
       document.addEventListener('DOMContentLoaded', adjustLayout);
 
-      // Toggle global de modo
+      // Eventos globales
       toggleBtn.addEventListener('click', () => {
         window.dispatchEvent(new CustomEvent('toggleMode'));
       });
+      altBtn.addEventListener('click', () => {
+        window.dispatchEvent(new CustomEvent('alternateAction'));
+      });
 
-      // Helpers panel/puerta
+      // Funciones auxiliares
       function invertColor(c) { const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(c); if(!m)return'#000'; const r=(255-parseInt(m[1],16)).toString(16).padStart(2,'0'); const g=(255-parseInt(m[2],16)).toString(16).padStart(2,'0'); const b=(255-parseInt(m[3],16)).toString(16).padStart(2,'0'); return `#${r}${g}${b}`; }
       function computePanelBg() { const bg=window.getComputedStyle(canvas).backgroundColor.match(/\d+/g); if(!bg)return'#000';return invertColor('#'+bg.slice(0,3).map(x=>parseInt(x).toString(16).padStart(2,'0')).join('')); }
       function closePanel(){ isOpen=false; panel.style.width='0'; panel.style.background='transparent'; panel.addEventListener('transitionend', function h(){ panel.style.display='none'; panel.innerHTML=''; door.textContent='📕'; panel.removeEventListener('transitionend',h); }); }
