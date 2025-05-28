@@ -1,48 +1,42 @@
 (function() {
-  // Módulo para crear bloques con un botón que muestra iconos según dos modos globales,
-  // implementado con dos contadores independientes y lógica de paridad.
-
+  // Módulo para crear bloques con un botón que muestra iconos según dos modos globales
   const btn = document.getElementById('modBtn');
   if (!btn) return console.warn('modBtn no encontrado');
 
-  // Dos contadores separados
-  let countToggle = 0;     // para 🔁 (💠/↘️)
-  let countAlternate = 0;  // para 🔄 (🎨/🖌️)
+  // Dos contadores para 🔁 y 🔄
+  let countToggle = 0;     // para 💠/↘️
+  let countAlternate = 0;  // para 🎨/🖌️
 
-  // Al pulsar un toggle global, incrementa su contador y resetea el otro
+  // Al pulsar 🔁 incrementa su contador y resetea el otro
   window.addEventListener('toggleMode', () => {
     countToggle++;
     countAlternate = 0;
-    // Actualizar la manecilla si ya hay bloques
-    document.querySelectorAll('.block-handle').forEach(h => {
-      refreshHandleIcon(h);
-    });
+    document.querySelectorAll('.block-handle').forEach(refreshHandleIcon);
   });
+  // Al pulsar 🔄 incrementa su contador y resetea el otro
   window.addEventListener('alternateAction', () => {
     countAlternate++;
     countToggle = 0;
-    document.querySelectorAll('.block-handle').forEach(h => {
-      refreshHandleIcon(h);
-    });
+    document.querySelectorAll('.block-handle').forEach(refreshHandleIcon);
   });
 
-  // Función que decide qué icono debe mostrar la manecilla
+  // Devuelve el icono correcto según paridad y modo activo
   function getCurrentIcon() {
     if (countAlternate === 0) {
-      // modo 1: 💠 (par) / ↘️ (impar)
+      // modo 1: par→💠, impar→↘️
       return (countToggle % 2 === 0) ? '💠' : '↘️';
     } else {
-      // modo 2: 🎨 (impar) / 🖌️ (par)
+      // modo 2: impar→🎨, par→🖌️
       return (countAlternate % 2 === 1) ? '🎨' : '🖌️';
     }
   }
 
-  // Refresca el icono de una manecilla existente
+  // Actualiza el texto de una manecilla existente
   function refreshHandleIcon(handle) {
     handle.textContent = getCurrentIcon();
   }
 
-  // Crear bloque y su manecilla
+  // Crear bloque y manecilla al pulsar el botón de la barra
   btn.addEventListener('click', () => {
     const canvas = document.getElementById('canvas');
     if (!canvas) return console.warn('canvas no encontrado');
@@ -51,11 +45,7 @@
     // Botón interno
     const innerBtn = document.createElement('button');
     innerBtn.textContent = 'Botón';
-    Object.assign(innerBtn.style, {
-      cursor: 'pointer',
-      padding: '8px 16px',
-      boxSizing: 'border-box'
-    });
+    Object.assign(innerBtn.style, { cursor: 'pointer', padding: '8px 16px', boxSizing: 'border-box' });
     innerBtn.addEventListener('click', e => e.stopPropagation());
 
     // Contenedor
@@ -63,7 +53,7 @@
     Object.assign(block.style, {
       position: 'absolute',
       left: '50px',
-      top: '50px',
+      top:  '50px',
       padding: margin + 'px',
       background: 'transparent',
       border: '1px solid #aaa',
@@ -76,7 +66,7 @@
     block.appendChild(innerBtn);
     canvas.appendChild(block);
 
-    // Dimensionar
+    // Dimensionar bloque
     const rect = innerBtn.getBoundingClientRect();
     block.style.width  = rect.width  + margin*2 + 'px';
     block.style.height = rect.height + margin*2 + 'px';
@@ -102,50 +92,88 @@
       fontSize: '14px',
       boxSizing: 'border-box'
     });
-    // Inicializar su icono
     refreshHandleIcon(handle);
     block.appendChild(handle);
 
-    // Arrastrar solo si está en 💠 (modo move)
-    let dragging = false, startX, startY, origX, origY;
-    handle.addEventListener('mousedown', e => {
-      // solo mover si icono actual es 💠
-      if (getCurrentIcon() !== '💠') return;
-      e.stopPropagation();
-      dragging = true;
-      startX = e.clientX; startY = e.clientY;
-      origX = block.offsetLeft; origY = block.offsetTop;
-      handle.style.cursor = 'grabbing';
-      e.preventDefault();
-    });
-    document.addEventListener('mousemove', e => {
-      if (!dragging) return;
-      block.style.left = origX + (e.clientX - startX) + 'px';
-      block.style.top  = origY + (e.clientY - startY) + 'px';
-    });
-    document.addEventListener('mouseup', () => {
-      if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
-    });
+    // Drag & resize según icono actual
+    let dragging = false, startX, startY, origX, origY, origW, origH;
 
-    // Touch
+    function onMouseDown(e) {
+      const icon = getCurrentIcon();
+      if (icon === '💠' || icon === '↘️') {
+        dragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        origX = block.offsetLeft;
+        origY = block.offsetTop;
+        origW = block.offsetWidth;
+        origH = block.offsetHeight;
+        handle.style.cursor = 'grabbing';
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    }
+
+    function onMouseMove(e) {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      const icon = getCurrentIcon();
+
+      if (icon === '💠') {
+        // mover
+        block.style.left = origX + dx + 'px';
+        block.style.top  = origY + dy + 'px';
+      } else if (icon === '↘️') {
+        // redimensionar
+        const newW = Math.max(origW + dx, margin*2 + 20);
+        const newH = Math.max(origH + dy, margin*2 + 20);
+        block.style.width  = newW + 'px';
+        block.style.height = newH + 'px';
+        innerBtn.style.width  = newW - margin*2 + 'px';
+        innerBtn.style.height = newH - margin*2 + 'px';
+      }
+    }
+
+    function onMouseUp() {
+      if (dragging) {
+        dragging = false;
+        handle.style.cursor = 'pointer';
+      }
+    }
+
+    handle.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+
+    // Touch handlers
     handle.addEventListener('touchstart', e => {
       const t = e.touches[0];
-      if (getCurrentIcon() !== '💠') return;
-      e.stopPropagation();
-      dragging = true;
-      startX = t.clientX; startY = t.clientY;
-      origX = block.offsetLeft; origY = block.offsetTop;
+      const icon = getCurrentIcon();
+      if (icon === '💠' || icon === '↘️') {
+        dragging = true;
+        startX = t.clientX;
+        startY = t.clientY;
+        origX = block.offsetLeft;
+        origY = block.offsetTop;
+        origW = block.offsetWidth;
+        origH = block.offsetHeight;
+      }
       e.preventDefault();
     }, { passive: false });
+
     document.addEventListener('touchmove', e => {
       if (!dragging) return;
       const t = e.touches[0];
-      block.style.left = origX + (t.clientX - startX) + 'px';
-      block.style.top  = origY + (t.clientY - startY) + 'px';
+      onMouseMove({ clientX: t.clientX, clientY: t.clientY });
       e.preventDefault();
     }, { passive: false });
+
     document.addEventListener('touchend', () => {
-      if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
+      if (dragging) {
+        dragging = false;
+        handle.style.cursor = 'pointer';
+      }
     });
   });
 })();
