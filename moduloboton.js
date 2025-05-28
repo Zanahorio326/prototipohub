@@ -1,6 +1,6 @@
 (function() {
   // Módulo para crear bloques con un botón que muestra iconos según dos modos globales,
-  // y prueba de alerta al pulsar 🎨
+  // ahora con editor de color al pulsar 🎨
   const btn = document.getElementById('modBtn');
   if (!btn) return console.warn('modBtn no encontrado');
 
@@ -37,7 +37,9 @@
 
     const innerBtn = document.createElement('button');
     innerBtn.textContent = 'Botón';
-    Object.assign(innerBtn.style, { cursor: 'pointer', padding: '8px 16px', boxSizing: 'border-box' });
+    Object.assign(innerBtn.style, {
+      cursor: 'pointer', padding: '8px 16px', boxSizing: 'border-box', background: '#fff'
+    });
     innerBtn.addEventListener('click', e => e.stopPropagation());
 
     const block = document.createElement('div');
@@ -67,7 +69,24 @@
     refreshHandleIcon(handle);
     block.appendChild(handle);
 
-    // Efecto visual de pulsación
+    // Editor de color para 🎨
+    function openColorEditor() {
+      const picker = document.createElement('input');
+      picker.type = 'color';
+      picker.value = rgbToHex(innerBtn.style.background || '#ffffff');
+      Object.assign(picker.style, {
+        position: 'absolute', zIndex: 100,
+        top: (block.offsetTop + block.offsetHeight + 5) + 'px',
+        left: (block.offsetLeft) + 'px'
+      });
+      picker.addEventListener('input', e => {
+        innerBtn.style.background = e.target.value;
+      });
+      picker.addEventListener('change', () => document.body.removeChild(picker));
+      document.body.appendChild(picker);
+      picker.focus();
+    }
+
     handle.addEventListener('pointerdown', () => handle.style.background = '#eee');
     handle.addEventListener('pointerup', () => handle.style.background = '#fff');
 
@@ -75,11 +94,11 @@
       e.stopPropagation();
       const icon = getCurrentIcon();
       if (icon === '🎨') {
-        alert('🎨 está siendo pulsado');
+        openColorEditor();
       }
     });
 
-    // Dragging logic (mover con 💠, redimensionar con ↘️)
+    // Mover/resize
     let dragging = false, startX, startY, origX, origY, origW, origH;
     function onMouseDown(e) {
       const icon = getCurrentIcon();
@@ -94,8 +113,7 @@
     }
     function onMouseMove(e) {
       if (!dragging) return;
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
+      const dx = e.clientX - startX; const dy = e.clientY - startY;
       const icon = getCurrentIcon();
       if (icon === '💠') {
         block.style.left = origX + dx + 'px';
@@ -109,31 +127,29 @@
         innerBtn.style.height = newH - margin*2 + 'px';
       }
     }
-    function onMouseUp() {
-      if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
-    }
+    function onMouseUp() { if (dragging) { dragging = false; handle.style.cursor='pointer'; }}
     handle.addEventListener('mousedown', onMouseDown);
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
 
-    // Touch support
     handle.addEventListener('touchstart', e => {
-      const t = e.touches[0];
-      const icon = getCurrentIcon();
-      if (icon === '💠' || icon === '↘️') {
-        dragging = true;
-        startX = t.clientX; startY = t.clientY;
-        origX = block.offsetLeft; origY = block.offsetTop;
-        origW = block.offsetWidth; origH = block.offsetHeight;
+      const t=e.touches[0]; const icon=getCurrentIcon();
+      if (icon==='💠'||icon==='↘️'){
+        dragging=true; startX=t.clientX; startY=t.clientY;
+        origX=block.offsetLeft; origY=block.offsetTop;
+        origW=block.offsetWidth; origH=block.offsetHeight;
       }
       e.preventDefault();
-    }, { passive: false });
+    },{passive:false});
     document.addEventListener('touchmove', e => {
       if (!dragging) return;
-      const t = e.touches[0];
-      onMouseMove({ clientX: t.clientX, clientY: t.clientY });
-      e.preventDefault();
-    }, { passive: false });
+      const t=e.touches[0]; onMouseMove({clientX:t.clientX,clientY:t.clientY}); e.preventDefault();
+    },{passive:false});
     document.addEventListener('touchend', onMouseUp);
   });
+
+  function rgbToHex(rgb){
+    const m=/rgba?\((\d+),\s*(\d+),\s*(\d+)/i.exec(rgb);
+    return m? '#'+[1,2,3].map(i=>parseInt(m[i]).toString(16).padStart(2,'0')).join(''):rgb;
+  }
 })();
