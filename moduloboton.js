@@ -67,25 +67,23 @@
     const dirContainer = document.createElement('div');
     dirContainer.style.display = 'flex';
     dirContainer.style.gap = '6px';
-    ['↕️','↔️','⭕'].forEach(dirEmoji => {
+    const dirs = ['↕️','↔️','⭕'];
+    const dirButtons = dirs.map(dirEmoji => {
       const btnDir = document.createElement('button');
       btnDir.textContent = dirEmoji;
       Object.assign(btnDir.style, {
-        padding: '4px', fontSize: '18px', cursor: 'pointer', background: 'transparent', border: 'none'
+        padding: '4px', fontSize: '18px', cursor: 'pointer', background: 'transparent', border: 'none', opacity: '0.5', pointerEvents: 'none'
       });
       btnDir.addEventListener('click', () => {
-        // marcaremos el seleccionado
-        dirContainer.querySelectorAll('button').forEach(b => b.style.opacity = '0.5');
+        dirButtons.forEach(b => { b.style.opacity = '0.5'; });
         btnDir.style.opacity = '1';
         updateBackground();
       });
       dirContainer.appendChild(btnDir);
+      return btnDir;
     });
-    // predeterminado ↕️
-    dirContainer.querySelector('button').style.opacity = '1';
     panel.appendChild(dirContainer);
 
-    // función para aplicar fondo
     function updateBackground() {
       const c1 = color1.value;
       if (!gradientToggle.classList.contains('active')) {
@@ -93,15 +91,11 @@
         return;
       }
       const c2 = color2.value;
-      const sel = [...dirContainer.children].find(b => b.style.opacity === '1').textContent;
+      const selected = dirButtons.find(b => b.style.opacity === '1').textContent;
       let css;
-      if (sel === '↕️') {
-        css = `linear-gradient(${c1}, ${c2})`;
-      } else if (sel === '↔️') {
-        css = `linear-gradient(90deg, ${c1}, ${c2})`;
-      } else {
-        css = `radial-gradient(circle, ${c1}, ${c2})`;
-      }
+      if (selected === '↕️') css = `linear-gradient(${c1}, ${c2})`;
+      else if (selected === '↔️') css = `linear-gradient(90deg, ${c1}, ${c2})`;
+      else css = `radial-gradient(circle, ${c1}, ${c2})`;
       innerBtn.style.background = css;
     }
 
@@ -110,6 +104,15 @@
     gradientToggle.addEventListener('click', () => {
       const active = gradientToggle.classList.toggle('active');
       color2.style.display = active ? 'block' : 'none';
+      // activar/desactivar selectores de dirección
+      dirButtons.forEach(b => {
+        b.style.pointerEvents = active ? 'auto' : 'none';
+        b.style.opacity = active ? '0.5' : '0.5';
+      });
+      // si activado, seleccionar primero
+      if (active) {
+        dirButtons[0].style.opacity = '1';
+      }
       updateBackground();
     });
 
@@ -159,9 +162,8 @@
       bottom: -(handleSize/2) + 'px', right:  -(handleSize/2) + 'px',
       borderRadius: '50%', background: '#fff',
       border: '1px solid #0056b3', display: 'flex',
-      alignItems: 'center', justifyContent: 'center',
-      cursor: 'pointer', userSelect: 'none',
-      fontSize: '14px', boxSizing: 'border-box'
+      alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+      userSelect: 'none', fontSize: '14px', boxSizing: 'border-box'
     });
     handle.textContent = getCurrentIcon();
     block.appendChild(handle);
@@ -225,8 +227,5 @@
       }));
       e.preventDefault();
     }, { passive: false });
-    document.addEventListener('touchend', () => {
-      if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
-    });
-  });
-})();
+    document]));
+})();``` 
