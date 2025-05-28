@@ -1,12 +1,11 @@
 (function() {
   // Módulo para crear bloques con un botón que muestra iconos según dos modos globales,
-  // y abre tarjeta flotante al pulsar 🎨 en la manija
-
+  // y prueba de alerta al pulsar 🎨
   const btn = document.getElementById('modBtn');
   if (!btn) return console.warn('modBtn no encontrado');
 
-  let countToggle = 0;     // para 💠/↘️
-  let countAlternate = 0;  // para 🎨/🖌️
+  let countToggle = 0;
+  let countAlternate = 0;
 
   window.addEventListener('toggleMode', () => {
     countToggle++;
@@ -62,39 +61,27 @@
       bottom: -(handleSize/2) + 'px', right:  -(handleSize/2) + 'px',
       borderRadius: '50%', background: '#fff', border: '1px solid #0056b3',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      cursor: 'pointer', userSelect: 'none', fontSize: '14px', boxSizing: 'border-box'
+      cursor: 'pointer', userSelect: 'none', fontSize: '14px', boxSizing: 'border-box',
+      transition: 'background 0.2s ease'
     });
     refreshHandleIcon(handle);
     block.appendChild(handle);
 
-    // Al pulsar manija
+    // Efecto visual de pulsación
+    handle.addEventListener('pointerdown', () => handle.style.background = '#eee');
+    handle.addEventListener('pointerup', () => handle.style.background = '#fff');
+
     handle.addEventListener('click', e => {
       e.stopPropagation();
       const icon = getCurrentIcon();
       if (icon === '🎨') {
-        // Crear tarjeta flotante
-        const card = document.createElement('div');
-        card.textContent = 'actualización';
-        Object.assign(card.style, {
-          position: 'absolute',
-          top: (block.offsetTop + block.offsetHeight + 10) + 'px',
-          left: block.offsetLeft + 'px',
-          background: '#fff',
-          border: '1px solid #333',
-          padding: '8px 12px',
-          borderRadius: '4px',
-          boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-          zIndex: 1000
-        });
-        // Cerrar tarjeta tras 2s
-        setTimeout(() => card.remove(), 2000);
-        document.body.appendChild(card);
+        alert('🎨 está siendo pulsado');
       }
     });
 
-    // Movimiento y redimension
+    // Dragging logic (mover con 💠, redimensionar con ↘️)
     let dragging = false, startX, startY, origX, origY, origW, origH;
-    handle.addEventListener('mousedown', e => {
+    function onMouseDown(e) {
       const icon = getCurrentIcon();
       if (icon === '💠' || icon === '↘️') {
         dragging = true;
@@ -104,15 +91,16 @@
         handle.style.cursor = 'grabbing';
         e.stopPropagation(); e.preventDefault();
       }
-    });
-    document.addEventListener('mousemove', e => {
+    }
+    function onMouseMove(e) {
       if (!dragging) return;
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
-      if (getCurrentIcon() === '💠') {
+      const icon = getCurrentIcon();
+      if (icon === '💠') {
         block.style.left = origX + dx + 'px';
         block.style.top  = origY + dy + 'px';
-      } else {
+      } else if (icon === '↘️') {
         const newW = Math.max(origW + dx, margin*2 + 20);
         const newH = Math.max(origH + dy, margin*2 + 20);
         block.style.width  = newW + 'px';
@@ -120,12 +108,15 @@
         innerBtn.style.width  = newW - margin*2 + 'px';
         innerBtn.style.height = newH - margin*2 + 'px';
       }
-    });
-    document.addEventListener('mouseup', () => {
+    }
+    function onMouseUp() {
       if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
-    });
+    }
+    handle.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
 
-    // Táctil
+    // Touch support
     handle.addEventListener('touchstart', e => {
       const t = e.touches[0];
       const icon = getCurrentIcon();
@@ -140,23 +131,9 @@
     document.addEventListener('touchmove', e => {
       if (!dragging) return;
       const t = e.touches[0];
-      const event = { clientX: t.clientX, clientY: t.clientY };
-      document.dispatchEvent(new MouseEvent('mousemove', event));
+      onMouseMove({ clientX: t.clientX, clientY: t.clientY });
       e.preventDefault();
     }, { passive: false });
-    document.addEventListener('touchend', () => {
-      if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
-    });
+    document.addEventListener('touchend', onMouseUp);
   });
-    });
 })();
-
-/* Añadido feedback visual para el estado "pulsado" en la manecilla */
-const style = document.createElement('style');
-style.textContent = `
-  .block-handle:active {
-    background: #e0e0e0;
-    transform: scale(0.9);
-  }
-`;
-document.head.appendChild(style);
