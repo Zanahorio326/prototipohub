@@ -1,28 +1,24 @@
 (function() {
   // Módulo para crear bloques con un botón que muestra iconos según dos modos globales,
-  // con panel de personalización al arrastrar en modo 🎨.
+  // con panel avanzado de selección de color o degradado al arrastrar en modo 🎨.
 
   const btn = document.getElementById('modBtn');
   if (!btn) return console.warn('modBtn no encontrado');
 
-  // Dos contadores para 🔁 y 🔄
   let countToggle = 0;     // para 💠/↘️
   let countAlternate = 0;  // para 🎨/🖌️
 
-  // Al pulsar 🔁 incrementa su contador y resetea el otro
   window.addEventListener('toggleMode', () => {
     countToggle++;
     countAlternate = 0;
     document.querySelectorAll('.block-handle').forEach(h => h.textContent = getCurrentIcon());
   });
-  // Al pulsar 🔄 incrementa su contador y resetea el otro
   window.addEventListener('alternateAction', () => {
     countAlternate++;
     countToggle = 0;
     document.querySelectorAll('.block-handle').forEach(h => h.textContent = getCurrentIcon());
   });
 
-  // Decide icono según paridad y modo activo
   function getCurrentIcon() {
     if (countAlternate === 0) {
       return (countToggle % 2 === 0) ? '💠' : '↘️';
@@ -31,30 +27,72 @@
     }
   }
 
-  // Abrir panel de personalización para el botón
-  function openCustomizationPanel(block) {
-    // Crear panel
+  function openColorPanel(block, innerBtn) {
+    // Crea panel flotante
     const panel = document.createElement('div');
     Object.assign(panel.style, {
       position: 'absolute',
       top: block.offsetTop + 'px',
       left: (block.offsetLeft + block.offsetWidth + 10) + 'px',
-      padding: '8px',
+      padding: '10px',
       background: '#fff',
       border: '1px solid #ccc',
-      zIndex: 1000
+      borderRadius: '4px',
+      boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+      zIndex: 1000,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px'
     });
-    // Color picker
-    const colorInput = document.createElement('input');
-    colorInput.type = 'color';
-    colorInput.value = '#007bff';
-    colorInput.addEventListener('input', () => {
-      block.querySelector('button').style.background = colorInput.value;
+
+    // Selector de primer color
+    const color1 = document.createElement('input');
+    color1.type = 'color';
+    color1.value = '#007bff';
+    color1.addEventListener('input', () => {
+      if (!gradientToggle.checked) {
+        innerBtn.style.background = color1.value;
+      } else {
+        updateGradient();
+      }
     });
-    panel.appendChild(colorInput);
+    panel.appendChild(color1);
+
+    // Toggle degradado
+    const gradientToggle = document.createElement('button');
+    gradientToggle.textContent = 'Degradé';
+    Object.assign(gradientToggle.style, {
+      padding: '4px 8px',
+      cursor: 'pointer'
+    });
+    panel.appendChild(gradientToggle);
+
+    // Selector de segundo color (oculto inicialmente)
+    const color2 = document.createElement('input');
+    color2.type = 'color';
+    color2.value = '#ff4081';
+    Object.assign(color2.style, { display: 'none' });
+    color2.addEventListener('input', updateGradient);
+    panel.appendChild(color2);
+
+    function updateGradient() {
+      innerBtn.style.background = `linear-gradient(${color1.value}, ${color2.value})`;
+    }
+
+    gradientToggle.addEventListener('click', () => {
+      const active = gradientToggle.classList.toggle('active');
+      if (active) {
+        color2.style.display = 'block';
+        updateGradient();
+      } else {
+        color2.style.display = 'none';
+        innerBtn.style.background = color1.value;
+      }
+    });
+
     document.body.appendChild(panel);
 
-    // Cerrar al hacer clic fuera
+    // Cerrar al clicar fuera
     function onClickOutside(e) {
       if (!panel.contains(e.target)) {
         panel.remove();
@@ -64,19 +102,24 @@
     document.addEventListener('mousedown', onClickOutside);
   }
 
-  // Crear bloque y manecilla al pulsar el botón de la barra
   btn.addEventListener('click', () => {
     const canvas = document.getElementById('canvas');
     if (!canvas) return console.warn('canvas no encontrado');
     const margin = 10;
 
-    // Botón interno
     const innerBtn = document.createElement('button');
     innerBtn.textContent = 'Botón';
-    Object.assign(innerBtn.style, { cursor: 'pointer', padding: '8px 16px', boxSizing: 'border-box' });
+    Object.assign(innerBtn.style, {
+      cursor: 'pointer',
+      padding: '8px 16px',
+      boxSizing: 'border-box',
+      background: '#007bff',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '4px'
+    });
     innerBtn.addEventListener('click', e => e.stopPropagation());
 
-    // Contenedor
     const block = document.createElement('div');
     Object.assign(block.style, {
       position: 'absolute',
@@ -94,12 +137,10 @@
     block.appendChild(innerBtn);
     canvas.appendChild(block);
 
-    // Dimensionar bloque
     const rect = innerBtn.getBoundingClientRect();
     block.style.width  = rect.width  + margin*2 + 'px';
     block.style.height = rect.height + margin*2 + 'px';
 
-    // Manecilla
     const handleSize = 24;
     const handle = document.createElement('div');
     handle.classList.add('block-handle');
@@ -123,13 +164,11 @@
     handle.textContent = getCurrentIcon();
     block.appendChild(handle);
 
-    // Drag & resize o panel de color según icono
     let dragging = false, startX, startY, origX, origY, origW, origH;
     handle.addEventListener('mousedown', e => {
       const icon = getCurrentIcon();
       if (icon === '🎨') {
-        // Abrir panel de personalización
-        openCustomizationPanel(block);
+        openColorPanel(block, innerBtn);
         return;
       }
       if (icon === '💠' || icon === '↘️') {
@@ -161,12 +200,12 @@
       if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
     });
 
-    // Touch equivalente
+    // Touch handlers mirror mouse logic
     handle.addEventListener('touchstart', e => {
       const t = e.touches[0];
       const icon = getCurrentIcon();
       if (icon === '🎨') {
-        openCustomizationPanel(block);
+        openColorPanel(block, innerBtn);
         return;
       }
       if (icon === '💠' || icon === '↘️') {
