@@ -1,11 +1,12 @@
 (function() {
   // Módulo para crear bloques con un botón que muestra iconos según dos modos globales,
-  // y prueba de alerta al pulsar 🎨
+  // ahora con alerta consistente al pulsar 🎨
+
   const btn = document.getElementById('modBtn');
   if (!btn) return console.warn('modBtn no encontrado');
 
-  let countToggle = 0;
-  let countAlternate = 0;
+  let countToggle = 0;     // para 💠/↘️
+  let countAlternate = 0;  // para 🎨/🖌️
 
   window.addEventListener('toggleMode', () => {
     countToggle++;
@@ -33,8 +34,8 @@
   btn.addEventListener('click', () => {
     const canvas = document.getElementById('canvas');
     if (!canvas) return console.warn('canvas no encontrado');
-    const margin = 10;
 
+    const margin = 10;
     const innerBtn = document.createElement('button');
     innerBtn.textContent = 'Botón';
     Object.assign(innerBtn.style, { cursor: 'pointer', padding: '8px 16px', boxSizing: 'border-box' });
@@ -66,18 +67,17 @@
     refreshHandleIcon(handle);
     block.appendChild(handle);
 
+    // listener único que siempre alerta si el icono actual es 🎨
     handle.addEventListener('click', e => {
       e.stopPropagation();
-      const icon = getCurrentIcon();
-      if (icon === '💠' || icon === '↘️') {
-        // no change for move/resize on click
-      } else if (icon === '🎨') {
+      if (getCurrentIcon() === '🎨') {
         alert('🎨 está siendo pulsado');
-      } // 🖌️ no action
+      }
+      // no hace nada para 💠, ↘️ o 🖌️
     });
 
-    // Dragging logic unchanged (move when 💠, resize when ↘️)
     let dragging = false, startX, startY, origX, origY, origW, origH;
+
     function onMouseDown(e) {
       const icon = getCurrentIcon();
       if (icon === '💠' || icon === '↘️') {
@@ -109,11 +109,11 @@
     function onMouseUp() {
       if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
     }
+
     handle.addEventListener('mousedown', onMouseDown);
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
 
-    // Touch events
     handle.addEventListener('touchstart', e => {
       const t = e.touches[0];
       const icon = getCurrentIcon();
@@ -134,3 +134,4 @@
     document.addEventListener('touchend', onMouseUp);
   });
 })();
+
