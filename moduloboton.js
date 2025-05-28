@@ -1,6 +1,6 @@
 (function() {
   // Módulo para crear bloques con un botón que muestra iconos según dos modos globales,
-  // con panel avanzado de selección de color y degradado con dirección.
+  // con panel avanzado de selección de color, degradado y dirección.
 
   const btn = document.getElementById('modBtn');
   if (!btn) return console.warn('modBtn no encontrado');
@@ -41,79 +41,79 @@
       zIndex: 1000,
       display: 'flex',
       flexDirection: 'column',
-      gap: '8px',
-      alignItems: 'flex-start'
+      gap: '8px'
     });
 
+    // Primer color
     const color1 = document.createElement('input');
     color1.type = 'color';
     color1.value = '#007bff';
     panel.appendChild(color1);
 
+    // Botón degradé
     const gradientToggle = document.createElement('button');
     gradientToggle.textContent = 'Degradé';
     Object.assign(gradientToggle.style, { padding: '4px 8px', cursor: 'pointer' });
     panel.appendChild(gradientToggle);
 
+    // Segundo color
     const color2 = document.createElement('input');
     color2.type = 'color';
     color2.value = '#ff4081';
     Object.assign(color2.style, { display: 'none' });
     panel.appendChild(color2);
 
-    // Dirección del degradado: 'vertical','horizontal','radial'
-    let gradientDirection = 'vertical';
+    // Selector dirección con emojis
     const dirContainer = document.createElement('div');
-    dirContainer.style.display = 'none';
-    dirContainer.style.gap = '4px';
-    ['↕️','↔️','⭕'].forEach(symbol => {
-      const b = document.createElement('button');
-      b.textContent = symbol;
-      Object.assign(b.style, { padding: '4px', cursor: 'pointer', fontSize: '16px' });
-      b.addEventListener('click', () => {
-        ['↕️','↔️','⭕'].forEach(sib => sib !== symbol && sibButton[sib].classList.remove('active'));
-        b.classList.toggle('active');
-        gradientDirection = (symbol === '↕️' ? 'vertical' : symbol === '↔️' ? 'horizontal' : 'radial');
-        updateGradient();
+    dirContainer.style.display = 'flex';
+    dirContainer.style.gap = '6px';
+    ['↕️','↔️','⭕'].forEach(dirEmoji => {
+      const btnDir = document.createElement('button');
+      btnDir.textContent = dirEmoji;
+      Object.assign(btnDir.style, {
+        padding: '4px', fontSize: '18px', cursor: 'pointer', background: 'transparent', border: 'none'
       });
-      dirContainer.appendChild(b);
+      btnDir.addEventListener('click', () => {
+        // marcaremos el seleccionado
+        dirContainer.querySelectorAll('button').forEach(b => b.style.opacity = '0.5');
+        btnDir.style.opacity = '1';
+        updateBackground();
+      });
+      dirContainer.appendChild(btnDir);
     });
-    // store refs for toggle
-    const sibButton = {};
-    Array.from(dirContainer.children).forEach(b => sibButton[b.textContent] = b);
+    // predeterminado ↕️
+    dirContainer.querySelector('button').style.opacity = '1';
     panel.appendChild(dirContainer);
 
-    function updateGradient() {
+    // función para aplicar fondo
+    function updateBackground() {
       const c1 = color1.value;
       if (!gradientToggle.classList.contains('active')) {
         innerBtn.style.background = c1;
-      } else {
-        if (gradientDirection === 'radial') {
-          innerBtn.style.background = `radial-gradient(circle, ${c1}, ${color2.value})`;
-        } else {
-          const dir = gradientDirection === 'vertical' ? 'to bottom' : 'to right';
-          innerBtn.style.background = `linear-gradient(${dir}, ${c1}, ${color2.value})`;
-        }
+        return;
       }
+      const c2 = color2.value;
+      const sel = [...dirContainer.children].find(b => b.style.opacity === '1').textContent;
+      let css;
+      if (sel === '↕️') {
+        css = `linear-gradient(${c1}, ${c2})`;
+      } else if (sel === '↔️') {
+        css = `linear-gradient(90deg, ${c1}, ${c2})`;
+      } else {
+        css = `radial-gradient(circle, ${c1}, ${c2})`;
+      }
+      innerBtn.style.background = css;
     }
 
+    color1.addEventListener('input', updateBackground);
+    color2.addEventListener('input', updateBackground);
     gradientToggle.addEventListener('click', () => {
       const active = gradientToggle.classList.toggle('active');
       color2.style.display = active ? 'block' : 'none';
-      dirContainer.style.display = active ? 'flex' : 'none';
-      if (active) {
-        // activar primer dirección
-        sibButton['↕️'].classList.add('active');
-        gradientDirection = 'vertical';
-      }
-      updateGradient();
+      updateBackground();
     });
 
-    color1.addEventListener('input', updateGradient);
-    color2.addEventListener('input', updateGradient);
-
     document.body.appendChild(panel);
-
     function onClickOutside(e) {
       if (!panel.contains(e.target)) {
         panel.remove();
@@ -131,21 +131,18 @@
     const innerBtn = document.createElement('button');
     innerBtn.textContent = 'Botón';
     Object.assign(innerBtn.style, {
-      cursor: 'pointer',
-      padding: '8px 16px',
-      boxSizing: 'border-box',
-      background: '#007bff',
-      color: '#fff',
-      border: 'none',
-      borderRadius: '4px'
+      cursor: 'pointer', padding: '8px 16px', boxSizing: 'border-box',
+      background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px'
     });
     innerBtn.addEventListener('click', e => e.stopPropagation());
 
     const block = document.createElement('div');
     Object.assign(block.style, {
-      position: 'absolute', left: '50px', top: '50px', padding: margin + 'px',
-      background: 'transparent', border: '1px solid #aaa', borderRadius: '4px',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box'
+      position: 'absolute', left: '50px', top:  '50px',
+      padding: margin + 'px', background: 'transparent',
+      border: '1px solid #aaa', borderRadius: '4px',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      boxSizing: 'border-box'
     });
     block.appendChild(innerBtn);
     canvas.appendChild(block);
@@ -160,9 +157,11 @@
     Object.assign(handle.style, {
       position: 'absolute', width: handleSize + 'px', height: handleSize + 'px',
       bottom: -(handleSize/2) + 'px', right:  -(handleSize/2) + 'px',
-      borderRadius: '50%', background: '#fff', border: '1px solid #0056b3',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      cursor: 'pointer', userSelect: 'none', fontSize: '14px', boxSizing: 'border-box'
+      borderRadius: '50%', background: '#fff',
+      border: '1px solid #0056b3', display: 'flex',
+      alignItems: 'center', justifyContent: 'center',
+      cursor: 'pointer', userSelect: 'none',
+      fontSize: '14px', boxSizing: 'border-box'
     });
     handle.textContent = getCurrentIcon();
     block.appendChild(handle);
@@ -221,11 +220,13 @@
     document.addEventListener('touchmove', e => {
       if (!dragging) return;
       const t = e.touches[0];
-      document.dispatchEvent(new MouseEvent('mousemove', { clientX: t.clientX, clientY: t.clientY }));
+      document.dispatchEvent(new MouseEvent('mousemove', {
+        clientX: t.clientX, clientY: t.clientY
+      }));
       e.preventDefault();
     }, { passive: false });
     document.addEventListener('touchend', () => {
       if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
     });
   });
-})();```
+})();
