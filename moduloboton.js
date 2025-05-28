@@ -148,4 +148,15 @@
       if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
     });
   });
+    });
 })();
+
+/* Añadido feedback visual para el estado "pulsado" en la manecilla */
+const style = document.createElement('style');
+style.textContent = `
+  .block-handle:active {
+    background: #e0e0e0;
+    transform: scale(0.9);
+  }
+`;
+document.head.appendChild(style);
