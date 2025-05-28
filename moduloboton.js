@@ -1,40 +1,44 @@
 (function() {
-  // Módulo para crear bloques con un botón que muestra iconos según dos modos globales,
-  // ahora con función de 🎨 para cambiar color/degradado del botón interno.
-
+  // Módulo para crear bloques con un botón que muestra iconos según dos modos globales
+  // y dispara una alerta al pulsar 🎨
   const btn = document.getElementById('modBtn');
   if (!btn) return console.warn('modBtn no encontrado');
 
-  // Dos contadores para 🔁 (💠/↘️) y 🔄 (🎨/🖌️)
-  let countToggle    = 0;
-  let countAlternate = 0;
+  // Contadores para 🔁 y 🔄
+  let countToggle = 0;     // para 💠/↘️
+  let countAlternate = 0;  // para 🎨/🖌️
 
-  // Eventos globales
+  // Al pulsar 🔁 incrementa su contador y resetea el otro
   window.addEventListener('toggleMode', () => {
     countToggle++;
     countAlternate = 0;
-    document.querySelectorAll('.block-handle').forEach(refreshHandle);
+    document.querySelectorAll('.block-handle').forEach(refreshHandleIcon);
   });
+  // Al pulsar 🔄 incrementa su contador y resetea el otro
   window.addEventListener('alternateAction', () => {
     countAlternate++;
     countToggle = 0;
-    document.querySelectorAll('.block-handle').forEach(refreshHandle);
+    document.querySelectorAll('.block-handle').forEach(refreshHandleIcon);
   });
 
-  // Devuelve el icono actual según paridad y conteos
-  function getIcon() {
+  // Devuelve el icono correcto según paridad y modo activo
+  function getCurrentIcon() {
     if (countAlternate === 0) {
+      // modo 1: par→💠, impar→↘️
       return (countToggle % 2 === 0) ? '💠' : '↘️';
     } else {
+      // modo 2: impar→🎨, par→🖌️
       return (countAlternate % 2 === 1) ? '🎨' : '🖌️';
     }
   }
 
-  function refreshHandle(handle) {
-    handle.textContent = getIcon();
+  // Actualiza el texto de una manecilla existente
+  function refreshHandleIcon(handle) {
+    const icon = getCurrentIcon();
+    handle.textContent = icon;
   }
 
-  // Crea bloque al pulsar el botón de la barra
+  // Crear bloque y manecilla al pulsar el botón de la barra
   btn.addEventListener('click', () => {
     const canvas = document.getElementById('canvas');
     if (!canvas) return console.warn('canvas no encontrado');
@@ -43,12 +47,7 @@
     // Botón interno
     const innerBtn = document.createElement('button');
     innerBtn.textContent = 'Botón';
-    Object.assign(innerBtn.style, {
-      cursor: 'pointer',
-      padding: '8px 16px',
-      boxSizing: 'border-box',
-      background: '#fff'
-    });
+    Object.assign(innerBtn.style, { cursor: 'pointer', padding: '8px 16px', boxSizing: 'border-box' });
     innerBtn.addEventListener('click', e => e.stopPropagation());
 
     // Contenedor
@@ -69,12 +68,12 @@
     block.appendChild(innerBtn);
     canvas.appendChild(block);
 
-    // Ajustar tamaño
+    // Dimensionar bloque
     const rect = innerBtn.getBoundingClientRect();
     block.style.width  = rect.width  + margin*2 + 'px';
     block.style.height = rect.height + margin*2 + 'px';
 
-    // Manecilla/icono
+    // Manecilla
     const handleSize = 24;
     const handle = document.createElement('div');
     handle.classList.add('block-handle');
@@ -95,32 +94,23 @@
       fontSize: '14px',
       boxSizing: 'border-box'
     });
-    refreshHandle(handle);
+    refreshHandleIcon(handle);
     block.appendChild(handle);
 
-    // Pulsar 🖌️ abre selector de color/degradado
+    // Al pulsar la manecilla y si está en 🎨, lanzar alerta
     handle.addEventListener('click', e => {
-      e.stopPropagation();
-      const icon = getIcon();
+      const icon = getCurrentIcon();
       if (icon === '🎨') {
-        // Crear panel de personalización de color/degradado
-        const picker = document.createElement('input');
-        picker.type = 'color';
-        picker.style.position = 'absolute';
-        picker.style.top  = (block.offsetTop + block.offsetHeight + 5) + 'px';
-        picker.style.left = (block.offsetLeft) + 'px';
-        picker.addEventListener('input', evt => {
-          innerBtn.style.background = evt.target.value;
-        });
-        document.body.appendChild(picker);
-        picker.click();
+        alert('🎨 pulsado');
       }
     });
 
-    // Drag & resize para 💠/↘️
+    // Resto de arrastre/redimensionado permanece igual...
+    // (solo mover si icono actual es 💠, solo redimensionar si ↘️)
     let dragging = false, startX, startY, origX, origY, origW, origH;
-    function onDown(e) {
-      const icon = getIcon();
+
+    function onMouseDown(e) {
+      const icon = getCurrentIcon();
       if (icon === '💠' || icon === '↘️') {
         dragging = true;
         startX = e.clientX; startY = e.clientY;
@@ -131,38 +121,49 @@
         e.preventDefault();
       }
     }
-    function onMove(e) {
+    function onMouseMove(e) {
       if (!dragging) return;
-      const dx = e.clientX - startX, dy = e.clientY - startY;
-      const icon = getIcon();
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      const icon = getCurrentIcon();
       if (icon === '💠') {
         block.style.left = origX + dx + 'px';
         block.style.top  = origY + dy + 'px';
-      } else {
-        const w = Math.max(origW + dx, margin*2 + 20);
-        const h = Math.max(origH + dy, margin*2 + 20);
-        block.style.width  = w + 'px';
-        block.style.height = h + 'px';
-        innerBtn.style.width  = w - margin*2 + 'px';
-        innerBtn.style.height = h - margin*2 + 'px';
+      } else if (icon === '↘️') {
+        const newW = Math.max(origW + dx, margin*2 + 20);
+        const newH = Math.max(origH + dy, margin*2 + 20);
+        block.style.width  = newW + 'px';
+        block.style.height = newH + 'px';
+        innerBtn.style.width  = newW - margin*2 + 'px';
+        innerBtn.style.height = newH - margin*2 + 'px';
       }
     }
-    function onUp() {
-      if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
+    function onMouseUp() {
+      if (dragging) {
+        dragging = false;
+        handle.style.cursor = 'pointer';
+      }
     }
-
-    handle.addEventListener('mousedown', onDown);
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    handle.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
     handle.addEventListener('touchstart', e => {
       const t = e.touches[0];
-      onDown({ clientX: t.clientX, clientY: t.clientY, stopPropagation: ()=>{}, preventDefault: ()=>{} });
-    }, { passive: false });
-    document.addEventListener('touchmove', e => {
-      const t = e.touches[0];
-      onMove({ clientX: t.clientX, clientY: t.clientY });
+      const icon = getCurrentIcon();
+      if (icon === '💠' || icon === '↘️') {
+        dragging = true;
+        startX = t.clientX; startY = t.clientY;
+        origX = block.offsetLeft; origY = block.offsetTop;
+        origW = block.offsetWidth; origH = block.offsetHeight;
+      }
       e.preventDefault();
     }, { passive: false });
-    document.addEventListener('touchend', onUp);
+    document.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      const t = e.touches[0];
+      onMouseMove({ clientX: t.clientX, clientY: t.clientY });
+      e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchend', onMouseUp);
   });
 })();
