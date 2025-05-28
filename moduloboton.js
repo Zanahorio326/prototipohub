@@ -1,6 +1,6 @@
 (function() {
   // Módulo para crear bloques con un botón que muestra iconos según dos modos globales,
-  // ahora con alerta consistente al pulsar 🎨
+  // y abre tarjeta flotante al pulsar 🎨 en la manija
 
   const btn = document.getElementById('modBtn');
   if (!btn) return console.warn('modBtn no encontrado');
@@ -34,8 +34,8 @@
   btn.addEventListener('click', () => {
     const canvas = document.getElementById('canvas');
     if (!canvas) return console.warn('canvas no encontrado');
-
     const margin = 10;
+
     const innerBtn = document.createElement('button');
     innerBtn.textContent = 'Botón';
     Object.assign(innerBtn.style, { cursor: 'pointer', padding: '8px 16px', boxSizing: 'border-box' });
@@ -67,18 +67,34 @@
     refreshHandleIcon(handle);
     block.appendChild(handle);
 
-    // listener único que siempre alerta si el icono actual es 🎨
+    // Al pulsar manija
     handle.addEventListener('click', e => {
       e.stopPropagation();
-      if (getCurrentIcon() === '🎨') {
-        alert('🎨 está siendo pulsado');
+      const icon = getCurrentIcon();
+      if (icon === '🎨') {
+        // Crear tarjeta flotante
+        const card = document.createElement('div');
+        card.textContent = 'actualización';
+        Object.assign(card.style, {
+          position: 'absolute',
+          top: (block.offsetTop + block.offsetHeight + 10) + 'px',
+          left: block.offsetLeft + 'px',
+          background: '#fff',
+          border: '1px solid #333',
+          padding: '8px 12px',
+          borderRadius: '4px',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+          zIndex: 1000
+        });
+        // Cerrar tarjeta tras 2s
+        setTimeout(() => card.remove(), 2000);
+        document.body.appendChild(card);
       }
-      // no hace nada para 💠, ↘️ o 🖌️
     });
 
+    // Movimiento y redimension
     let dragging = false, startX, startY, origX, origY, origW, origH;
-
-    function onMouseDown(e) {
+    handle.addEventListener('mousedown', e => {
       const icon = getCurrentIcon();
       if (icon === '💠' || icon === '↘️') {
         dragging = true;
@@ -88,16 +104,15 @@
         handle.style.cursor = 'grabbing';
         e.stopPropagation(); e.preventDefault();
       }
-    }
-    function onMouseMove(e) {
+    });
+    document.addEventListener('mousemove', e => {
       if (!dragging) return;
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
-      const icon = getCurrentIcon();
-      if (icon === '💠') {
+      if (getCurrentIcon() === '💠') {
         block.style.left = origX + dx + 'px';
         block.style.top  = origY + dy + 'px';
-      } else if (icon === '↘️') {
+      } else {
         const newW = Math.max(origW + dx, margin*2 + 20);
         const newH = Math.max(origH + dy, margin*2 + 20);
         block.style.width  = newW + 'px';
@@ -105,15 +120,12 @@
         innerBtn.style.width  = newW - margin*2 + 'px';
         innerBtn.style.height = newH - margin*2 + 'px';
       }
-    }
-    function onMouseUp() {
+    });
+    document.addEventListener('mouseup', () => {
       if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
-    }
+    });
 
-    handle.addEventListener('mousedown', onMouseDown);
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-
+    // Táctil
     handle.addEventListener('touchstart', e => {
       const t = e.touches[0];
       const icon = getCurrentIcon();
@@ -128,10 +140,12 @@
     document.addEventListener('touchmove', e => {
       if (!dragging) return;
       const t = e.touches[0];
-      onMouseMove({ clientX: t.clientX, clientY: t.clientY });
+      const event = { clientX: t.clientX, clientY: t.clientY };
+      document.dispatchEvent(new MouseEvent('mousemove', event));
       e.preventDefault();
     }, { passive: false });
-    document.addEventListener('touchend', onMouseUp);
+    document.addEventListener('touchend', () => {
+      if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
+    });
   });
 })();
-
