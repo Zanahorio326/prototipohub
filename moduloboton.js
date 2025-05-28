@@ -149,24 +149,3 @@
     });
   });
 })();
-
-Qué hace
-
-countToggle y countAlternate acumulan pulsaciones de 🔁 y 🔄 respectivamente.
-
-Al pulsar 🔁 aumenta countToggle y resetea countAlternate; al pulsar 🔄 hace lo inverso.
-
-La función getCurrentIcon() usa la paridad de cada contador para decidir:
-
-🔁 activo (contador de 🔄 = 0): par → 💠, impar → ↘️
-
-🔄 activo (contador de 🔄 > 0): impar → 🎨, par → 🖌️
-
-
-Cada bloque que creas obtiene una “manecilla” que solo muestra el icono resultante de getCurrentIcon().
-
-La manecilla no altera modos, solo permite mover el bloque cuando muestra 💠.
-
-
-Así cumples la lógica matemática de paridad y doble memoria que propusiste.
-
