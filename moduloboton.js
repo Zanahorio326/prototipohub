@@ -1,6 +1,6 @@
 (function() {
   // Módulo para crear bloques con un botón que muestra iconos según dos modos globales,
-  // y editor de color al pulsar 🎨, con handle interactivo totalmente clicable
+  // y editor de color al pulsar 🎨. Handle posicionado con transform para ser clicable.
   const btn = document.getElementById('modBtn');
   if (!btn) return console.warn('modBtn no encontrado');
 
@@ -37,17 +37,14 @@
 
     const innerBtn = document.createElement('button');
     innerBtn.textContent = 'Botón';
-    Object.assign(innerBtn.style, {
-      cursor: 'pointer', padding: '8px 16px', boxSizing: 'border-box', background: '#fff'
-    });
+    Object.assign(innerBtn.style, { cursor: 'pointer', padding: '8px 16px', boxSizing: 'border-box', background: '#fff' });
     innerBtn.addEventListener('click', e => e.stopPropagation());
 
     const block = document.createElement('div');
     Object.assign(block.style, {
       position: 'absolute', left: '50px', top: '50px', padding: margin + 'px',
       background: 'transparent', border: '1px solid #aaa', borderRadius: '4px',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      boxSizing: 'border-box', overflow: 'visible' // permitir que el asa sea clicable
+      display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box'
     });
     block.appendChild(innerBtn);
     canvas.appendChild(block);
@@ -56,12 +53,14 @@
     block.style.width  = rect.width  + margin*2 + 'px';
     block.style.height = rect.height + margin*2 + 'px';
 
+    // Create handle with transform for half-outside visual but inside pointer area
     const handleSize = 24;
     const handle = document.createElement('div');
     handle.classList.add('block-handle');
     Object.assign(handle.style, {
       position: 'absolute', width: handleSize + 'px', height: handleSize + 'px',
-      bottom: -(handleSize/2) + 'px', right:  -(handleSize/2) + 'px',
+      bottom: '0', right: '0',
+      transform: 'translate(50%, 50%)',
       borderRadius: '50%', background: '#fff', border: '1px solid #0056b3',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       cursor: 'pointer', userSelect: 'none', fontSize: '14px', boxSizing: 'border-box',
@@ -70,11 +69,11 @@
     refreshHandleIcon(handle);
     block.appendChild(handle);
 
-    // Efecto visual de pulsación
+    // Visual feedback
     handle.addEventListener('pointerdown', () => handle.style.background = '#eee');
     handle.addEventListener('pointerup', () => handle.style.background = '#fff');
 
-    // Acción de color para 🎨
+    // Color editor on 🎨
     handle.addEventListener('click', e => {
       e.stopPropagation();
       const icon = getCurrentIcon();
@@ -94,7 +93,7 @@
       }
     });
 
-    // Arrastrar/redimensionar
+    // Move/resize logic
     let dragging = false, startX, startY, origX, origY, origW, origH;
     function onDown(e) {
       const icon = getCurrentIcon();
@@ -121,17 +120,15 @@
         innerBtn.style.height = newH - margin*2 + 'px';
       }
     }
-    function onUp() { if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }}
+    function onUp() { if (dragging) { dragging = false; handle.style.cursor='pointer'; }}
     handle.addEventListener('mousedown', onDown);
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
 
     handle.addEventListener('touchstart', e => {
-      const t = e.touches[0];
-      const icon = getCurrentIcon();
+      const t = e.touches[0]; const icon = getCurrentIcon();
       if (icon === '💠' || icon === '↘️') {
-        dragging = true;
-        startX = t.clientX; startY = t.clientY;
+        dragging = true; startX = t.clientX; startY = t.clientY;
         origX = block.offsetLeft; origY = block.offsetTop;
         origW = block.offsetWidth; origH = block.offsetHeight;
       }
