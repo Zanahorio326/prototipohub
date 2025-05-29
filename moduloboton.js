@@ -13,6 +13,7 @@
     countAlternate = 0;
     document.querySelectorAll('.block-handle').forEach(h => h.textContent = getCurrentIcon());
   });
+
   window.addEventListener('alternateAction', () => {
     countAlternate++;
     countToggle = 0;
@@ -27,76 +28,99 @@
     }
   }
 
-  function openColorPanel(block, innerBtn) {
-    const panel = document.createElement('div');
-    Object.assign(panel.style, {
-      position: 'absolute', top: block.offsetTop + 'px',
-      left: (block.offsetLeft + block.offsetWidth + 10) + 'px',
-      padding: '10px', background: '#fff', border: '1px solid #ccc', borderRadius: '4px',
-      boxShadow: '0 2px 6px rgba(0,0,0,0.2)', zIndex: 1000,
-      display: 'flex', flexDirection: 'column', gap: '8px'
-    });
-    const color1 = document.createElement('input'); color1.type = 'color'; color1.value = '#007bff'; panel.appendChild(color1);
-    const gradientToggle = document.createElement('button'); gradientToggle.textContent = 'Degradé'; gradientToggle.style.cursor = 'pointer'; panel.appendChild(gradientToggle);
-    const color2 = document.createElement('input'); color2.type = 'color'; color2.value = '#ff4081'; color2.style.display = 'none'; panel.appendChild(color2);
-    const dirContainer = document.createElement('div'); Object.assign(dirContainer.style, { display: 'none', gap: '6px' });
-    ['↕️','↔️','⭕'].forEach(e => { const b = document.createElement('button'); b.textContent = e; Object.assign(b.style, { cursor: 'pointer', opacity: '0.5' }); b.addEventListener('click', () => { dirContainer.querySelectorAll('button').forEach(x => x.style.opacity = '0.5'); b.style.opacity = '1'; applyBg(); }); dirContainer.appendChild(b); }); dirContainer.children[0].style.opacity = '1'; panel.appendChild(dirContainer);
-    const shapeContainer = document.createElement('div'); Object.assign(shapeContainer.style, { display: 'none', gap: '6px' });
-    ['◻️','🔲','⚫'].forEach(e => { const b = document.createElement('button'); b.textContent = e; Object.assign(b.style, { cursor: 'pointer', opacity: '0.5' }); b.addEventListener('click', () => { shapeContainer.querySelectorAll('button').forEach(x => x.style.opacity = '0.5'); b.style.opacity = '1'; applyBg(); }); shapeContainer.appendChild(b); }); shapeContainer.children[0].style.opacity = '1'; panel.appendChild(shapeContainer);
-
-    function applyBg() {
-      const c1 = color1.value;
-      // Background
-      if (!gradientToggle.classList.contains('active')) {
-        innerBtn.style.background = c1;
-      } else {
-        const c2 = color2.value;
-        const sel = [...dirContainer.children].find(b => b.style.opacity === '1').textContent;
-        let css;
-        if (sel === '↕️') css = `linear-gradient(${c1},${c2})`;
-        else if (sel === '↔️') css = `linear-gradient(90deg,${c1},${c2})`;
-        else css = `radial-gradient(circle,${c1},${c2})`;
-        innerBtn.style.background = css;
-      }
-      // Shape
-      const shape = [...shapeContainer.children].find(b => b.style.opacity === '1').textContent;
-      if (shape === '◻️') innerBtn.style.borderRadius = '0';
-      else if (shape === '🔲') innerBtn.style.borderRadius = '4px';
-      else if (shape === '⚫') innerBtn.style.borderRadius = '50%';
-    }
-
-    color1.addEventListener('input', applyBg);
-    color2.addEventListener('input', applyBg);
-    gradientToggle.addEventListener('click', () => {
-      const a = gradientToggle.classList.toggle('active');
-      color2.style.display = a ? 'block' : 'none';
-      dirContainer.style.display = a ? 'flex' : 'none';
-      shapeContainer.style.display = 'flex';
-      applyBg();
-    });
-
-    document.body.appendChild(panel);
-    document.addEventListener('mousedown', function f(e) { if (!panel.contains(e.target)) { panel.remove(); document.removeEventListener('mousedown', f); }});
-  }
-
   function openOutlinePanel(block, innerBtn) {
     const panel = document.createElement('div');
-    Object.assign(panel.style, { position: 'absolute', top: block.offsetTop + 'px', left: (block.offsetLeft + block.offsetWidth + 10) + 'px', padding: '10px', background: '#fff', border: '1px solid #ccc', borderRadius: '4px', boxShadow: '0 2px 6px rgba(0,0,0,0.2)', zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '8px' });
-    const enableOutline = document.createElement('label'); enableOutline.style.cursor = 'pointer'; const cb = document.createElement('input'); cb.type = 'checkbox'; enableOutline.appendChild(cb); enableOutline.appendChild(document.createTextNode(' Contorno')); panel.appendChild(enableOutline);
-    const shapeContainer = document.createElement('div'); Object.assign(shapeContainer.style, { display: 'none', gap: '6px' });
-    ['◻️','🔲','⚫'].forEach(e => { const b = document.createElement('button'); b.textContent = e; Object.assign(b.style, { cursor: 'pointer', opacity: '0.5' }); b.addEventListener('click', () => { shapeContainer.querySelectorAll('button').forEach(x => x.style.opacity = '0.5'); b.style.opacity = '1'; applyOutline(); }); shapeContainer.appendChild(b); }); shapeContainer.children[0].style.opacity = '1'; panel.appendChild(shapeContainer);
-    const color1 = document.createElement('input'); color1.type = 'color'; color1.value = '#0056b3'; color1.style.display = 'none'; panel.appendChild(color1);
-    const gradientToggle = document.createElement('button'); gradientToggle.textContent = 'Degradé'; gradientToggle.style.cursor = 'pointer'; gradientToggle.style.display = 'none'; panel.appendChild(gradientToggle);
-    const color2 = document.createElement('input'); color2.type = 'color'; color2.value = '#003f7f'; color2.style.display = 'none'; panel.appendChild(color2);
-    const dirContainer = document.createElement('div'); Object.assign(dirContainer.style, { display: 'none', gap: '6px' }); ['↕️','↔️'].forEach(e => { const b = document.createElement('button'); b.textContent = e; Object.assign(b.style, { cursor: 'pointer', opacity: '0.5' }); b.addEventListener('click', () => { dirContainer.querySelectorAll('button').forEach(x => x.style.opacity = '0.5'); b.style.opacity = '1'; applyOutline(); }); dirContainer.appendChild(b); }); dirContainer.children[0].style.opacity = '1'; panel.appendChild(dirContainer);
+    Object.assign(panel.style, {
+      position: 'absolute',
+      top: block.offsetTop + 'px',
+      left: block.offsetLeft + block.offsetWidth + 10 + 'px',
+      padding: '10px',
+      background: '#fff',
+      border: '1px solid #ccc',
+      borderRadius: '4px',
+      boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+      zIndex: 1000,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px'
+    });
+
+    // Checkbox para habilitar contorno
+    const enableOutline = document.createElement('label');
+    enableOutline.style.cursor = 'pointer';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    enableOutline.appendChild(cb);
+    enableOutline.appendChild(document.createTextNode(' Contorno'));
+    panel.appendChild(enableOutline);
+
+    // Selección de forma básica (antes de degradé)
+    const shapeContainer = document.createElement('div');
+    Object.assign(shapeContainer.style, { display: 'none', gap: '6px' });
+    ['◻️','🔲','⚫'].forEach(e => {
+      const b = document.createElement('button');
+      b.textContent = e;
+      Object.assign(b.style, { cursor: 'pointer', opacity: '0.5' });
+      b.addEventListener('click', () => {
+        shapeContainer.querySelectorAll('button').forEach(x => x.style.opacity = '0.5');
+        b.style.opacity = '1';
+        applyOutline();
+      });
+      shapeContainer.appendChild(b);
+    });
+    // predeterminar forma cuadrada
+    shapeContainer.children[0].style.opacity = '1';
+    panel.appendChild(shapeContainer);
+
+    // Color base para el contorno
+    const color1 = document.createElement('input');
+    color1.type = 'color';
+    color1.value = '#0056b3';
+    color1.style.display = 'none';
+    panel.appendChild(color1);
+
+    // Botón degradé para contorno
+    const gradientToggle = document.createElement('button');
+    gradientToggle.textContent = 'Degradé';
+    gradientToggle.style.cursor = 'pointer';
+    gradientToggle.style.display = 'none';
+    panel.appendChild(gradientToggle);
+
+    // Segundo color para degradé contorno
+    const color2 = document.createElement('input');
+    color2.type = 'color';
+    color2.value = '#003f7f';
+    color2.style.display = 'none';
+    panel.appendChild(color2);
+
+    // Direcciones para degradé contorno (solo vertical y horizontal)
+    const dirContainer = document.createElement('div');
+    Object.assign(dirContainer.style, { display: 'none', gap: '6px' });
+    ['↕️','↔️'].forEach(e => {
+      const b = document.createElement('button');
+      b.textContent = e;
+      Object.assign(b.style, { cursor: 'pointer', opacity: '0.5' });
+      b.addEventListener('click', () => {
+        dirContainer.querySelectorAll('button').forEach(x => x.style.opacity = '0.5');
+        b.style.opacity = '1';
+        applyOutline();
+      });
+      dirContainer.appendChild(b);
+    });
+    // predeterminar vertical
+    dirContainer.children[0].style.opacity = '1';
+    panel.appendChild(dirContainer);
+
     function applyOutline() {
-      if (!cb.checked) { innerBtn.style.border = 'none'; return; }
-      const c1 = color1.value;
-      let borderStyle;
+      if (!cb.checked) {
+        innerBtn.style.border = 'none';
+        return;
+      }
+      // aplicar color o degradé
       if (!gradientToggle.classList.contains('active')) {
-        borderStyle = `2px solid ${c1}`;
-        innerBtn.style.border = borderStyle;
+        innerBtn.style.border = `2px solid ${color1.value}`;
       } else {
+        const c1 = color1.value;
         const c2 = color2.value;
         const sel = [...dirContainer.children].find(b => b.style.opacity === '1').textContent;
         let css;
@@ -106,37 +130,48 @@
         innerBtn.style.borderWidth = '2px';
         innerBtn.style.borderStyle = 'solid';
       }
-      // Formas en degradé y sólido
+
+      // aplicar forma de contorno siempre
       const shape = [...shapeContainer.children].find(b => b.style.opacity === '1').textContent;
       if (shape === '◻️') innerBtn.style.borderRadius = '0';
       else if (shape === '🔲') innerBtn.style.borderRadius = '4px';
       else if (shape === '⚫') innerBtn.style.borderRadius = '50%';
     }
+
+    // eventos de mostrar/ocultar controles
     cb.addEventListener('change', () => {
       const active = cb.checked;
-      shapeContainer.style.display = active ? 'flex' : 'none';
-      color1.style.display = active ? 'block' : 'none';
-      gradientToggle.style.display = active ? 'block' : 'none';
-      dirContainer.style.display = active ? 'flex' : 'none';
-      color2.style.display = 'none'; gradientToggle.classList.remove('active');
+      shapeContainer.style.display     = active ? 'flex' : 'none';
+      color1.style.display             = active ? 'block' : 'none';
+      gradientToggle.style.display     = active ? 'block' : 'none';
+      dirContainer.style.display       = active ? 'flex' : 'none';
+      color2.style.display             = 'none';
+      gradientToggle.classList.remove('active');
       applyOutline();
     });
     color1.addEventListener('input', applyOutline);
     color2.addEventListener('input', applyOutline);
     gradientToggle.addEventListener('click', () => {
-      const a = gradientToggle.classList.toggle('active');
-      color2.style.display = a ? 'block' : 'none';
-      dirContainer.style.display = a ? 'flex' : 'none';
+      const active = gradientToggle.classList.toggle('active');
+      color2.style.display         = active ? 'block' : 'none';
+      dirContainer.style.display   = active ? 'flex' : 'none';
       applyOutline();
     });
+
     document.body.appendChild(panel);
-    document.addEventListener('mousedown', function f(e) { if (!panel.contains(e.target)) { panel.remove(); document.removeEventListener('mousedown', f); }});
+    document.addEventListener('mousedown', function f(e) {
+      if (!panel.contains(e.target)) {
+        panel.remove();
+        document.removeEventListener('mousedown', f);
+      }
+    });
   }
 
   btn.addEventListener('click', () => {
     const canvas = document.getElementById('canvas');
     if (!canvas) return;
     const margin = 10;
+    // crear botón interno
     const innerBtn = document.createElement('button');
     innerBtn.textContent = 'Botón';
     Object.assign(innerBtn.style, {
@@ -145,6 +180,7 @@
     });
     innerBtn.addEventListener('click', e => e.stopPropagation());
 
+    // contenedor bloque
     const block = document.createElement('div');
     Object.assign(block.style, {
       position: 'absolute', left: '50px', top: '50px', padding: margin + 'px',
@@ -155,9 +191,10 @@
     canvas.appendChild(block);
 
     const rect = innerBtn.getBoundingClientRect();
-    block.style.width  = rect.width  + margin*2 + 'px';
+    block.style.width  = rect.width + margin*2 + 'px';
     block.style.height = rect.height + margin*2 + 'px';
 
+    // asa de control
     const handle = document.createElement('div');
     const handleSize = 24;
     handle.classList.add('block-handle');
@@ -185,6 +222,7 @@
         e.stopPropagation(); e.preventDefault();
       }
     });
+
     document.addEventListener('mousemove', e => {
       if (!dragging) return;
       const dx = e.clientX - startX, dy = e.clientY - startY;
@@ -201,9 +239,34 @@
         innerBtn.style.height = newH - margin*2 + 'px';
       }
     });
-    document.addEventListener('mouseup', () => { if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }});
-    handle.addEventListener('touchstart', e => { const t = e.touches[0]; const icon = getCurrentIcon(); if (icon === '🎨') { openColorPanel(block, innerBtn); return; } if (icon === '🖌️') { openOutlinePanel(block, innerBtn); return; } if (icon === '💠' || icon === '↘️') { dragging = true; startX = t.clientX; startY = t.clientY; origX = block.offsetLeft; origY = block.offsetTop; origW = block.offsetWidth; origH = block.offsetHeight; } e.preventDefault(); }, { passive: false });
-    document.addEventListener('touchmove', e => { if (!dragging) return; const t = e.touches[0]; document.dispatchEvent(new MouseEvent('mousemove',{clientX:t.clientX, clientY:t.clientY})); e.preventDefault(); }, { passive: false });
-    document.addEventListener('touchend', () => { if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }});
+
+    document.addEventListener('mouseup', () => {
+      if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
+    });
+
+    handle.addEventListener('touchstart', e => {
+      const t = e.touches[0];
+      const icon = getCurrentIcon();
+      if (icon === '🎨') { openColorPanel(block, innerBtn); return; }
+      if (icon === '🖌️') { openOutlinePanel(block, innerBtn); return; }
+      if (icon === '💠' || icon === '↘️') {
+        dragging = true;
+        startX = t.clientX; startY = t.clientY;
+        origX = block.offsetLeft; origY = block.offsetTop;
+        origW = block.offsetWidth; origH = block.offsetHeight;
+      }
+      e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      const t = e.touches[0];
+      document.dispatchEvent(new MouseEvent('mousemove', { clientX: t.clientX, clientY: t.clientY }));
+      e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('touchend', () => {
+      if (dragging) { dragging = false; handle.style.cursor = 'pointer'; }
+    });
   });
 })();
