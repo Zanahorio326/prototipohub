@@ -43,7 +43,12 @@
     ['↕️','↔️','⭕'].forEach(e => { const b = document.createElement('button'); b.textContent = e; Object.assign(b.style, { cursor: 'pointer', opacity: '0.5' }); b.addEventListener('click', () => { dirContainer.querySelectorAll('button').forEach(x => x.style.opacity = '0.5'); b.style.opacity = '1'; applyBg(); }); dirContainer.appendChild(b); }); dirContainer.children[0].style.opacity = '1'; panel.appendChild(dirContainer);
     function applyBg() { const c1 = color1.value; if (!gradientToggle.classList.contains('active')) { innerBtn.style.background = c1; return; } const c2 = color2.value; const sel = [...dirContainer.children].find(b => b.style.opacity === '1').textContent; let css; if (sel === '↕️') css = `linear-gradient(${c1},${c2})`; else if (sel === '↔️') css = `linear-gradient(90deg,${c1},${c2})`; else css = `radial-gradient(circle,${c1},${c2})`; innerBtn.style.background = css; }
     color1.addEventListener('input', applyBg); color2.addEventListener('input', applyBg);
-    gradientToggle.addEventListener('click', () => { const a = gradientToggle.classList.toggle('active'); color2.style.display = a ? 'block' : 'none'; dirContainer.style.display = a ? 'flex' : 'none'; applyBg(); });
+    gradientToggle.addEventListener('click', () => {
+      const a = gradientToggle.classList.toggle('active');
+      color2.style.display = a ? 'block' : 'none';
+      dirContainer.style.display = a ? 'flex' : 'none';
+      applyBg();
+    });
     document.body.appendChild(panel);
     document.addEventListener('mousedown', function f(e) { if (!panel.contains(e.target)) { panel.remove(); document.removeEventListener('mousedown', f); }});
   }
@@ -65,6 +70,15 @@
     const dirContainer = document.createElement('div'); Object.assign(dirContainer.style, { display: 'none', gap: '6px' }); ['↕️','↔️'].forEach(e => { const b = document.createElement('button'); b.textContent = e; Object.assign(b.style, { cursor: 'pointer', opacity: '0.5' }); b.addEventListener('click', () => { dirContainer.querySelectorAll('button').forEach(x => x.style.opacity = '0.5'); b.style.opacity = '1'; applyOutline(); }); dirContainer.appendChild(b); }); dirContainer.children[0].style.opacity = '1'; panel.appendChild(dirContainer);
     function applyOutline() {
       if (!cb.checked) { innerBtn.style.border = 'none'; return; }
+      const shape = [...shapeContainer.children].find(b => b.style.opacity === '1').textContent;
+      // Si hay degradé, forzamos forma circular
+      if (gradientToggle.classList.contains('active')) {
+        innerBtn.style.borderRadius = '50%';
+      } else {
+        if (shape === '◻️') innerBtn.style.borderRadius = '0';
+        else if (shape === '🔲') innerBtn.style.borderRadius = '4px';
+        else if (shape === '⚫') innerBtn.style.borderRadius = '50%';
+      }
       const c1 = color1.value;
       if (!gradientToggle.classList.contains('active')) {
         innerBtn.style.border = `2px solid ${c1}`;
@@ -77,11 +91,6 @@
         innerBtn.style.borderWidth = '2px';
         innerBtn.style.borderStyle = 'solid';
       }
-      // Aplicar forma de borde
-      const shape = [...shapeContainer.children].find(b => b.style.opacity === '1').textContent;
-      if (shape === '◻️') innerBtn.style.borderRadius = '0';
-      else if (shape === '🔲') innerBtn.style.borderRadius = '4px';
-      else if (shape === '⚫') innerBtn.style.borderRadius = '50%';
     }
     cb.addEventListener('change', () => {
       const active = cb.checked;
