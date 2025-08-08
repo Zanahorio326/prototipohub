@@ -118,61 +118,62 @@
 <script>
   let contadorID = 0;
 
-  function guardarEnLocalStorage() {
+  // Función para guardar el estado actual de las fichas en localStorage
+  function guardarEnStorage() {
     const fichas = [];
-    document.querySelectorAll(".ficha").forEach(ficha => {
-      const id = ficha.querySelector("p strong").nextSibling.textContent.trim();
-      const nombre = ficha.querySelector(".nombreTexto").textContent;
-      const categoria = ficha.querySelector(".categoriaTexto").textContent;
-      const ubicacion = ficha.querySelector(".ubicacionTexto").textContent;
+    document.querySelectorAll('.ficha').forEach(ficha => {
+      const id = ficha.querySelector('p strong').nextSibling.textContent.trim();
+      const nombre = ficha.querySelector('.nombreTexto').textContent;
+      const categoria = ficha.querySelector('.categoriaTexto').textContent;
+      const ubicacion = ficha.querySelector('.ubicacionTexto').textContent;
       const disponible = parseInt(ficha.querySelector('button[data-state="disponible"]').textContent);
       const enUso = parseInt(ficha.querySelector('button[data-state="en-uso"]').textContent);
       const danado = parseInt(ficha.querySelector('button[data-state="danado"]').textContent);
       fichas.push({ id, nombre, categoria, ubicacion, disponible, enUso, danado });
     });
-    localStorage.setItem("inventarioHerramientas", JSON.stringify(fichas));
-    localStorage.setItem("contadorID", contadorID);
+    localStorage.setItem('fichasHerramientas', JSON.stringify(fichas));
+    localStorage.setItem('contadorID', contadorID);
   }
 
-  function cargarDesdeLocalStorage() {
-    const data = localStorage.getItem("inventarioHerramientas");
-    if (data) {
-      const fichas = JSON.parse(data);
-      if (localStorage.getItem("contadorID")) {
-        contadorID = parseInt(localStorage.getItem("contadorID"));
-      }
-      fichas.forEach(({ id, nombre, categoria, ubicacion, disponible, enUso, danado }) => {
-        crearFichaDesdeStorage(id, nombre, categoria, ubicacion, disponible, enUso, danado);
+  // Función para cargar fichas desde localStorage
+  function cargarDesdeStorage() {
+    const fichasGuardadas = JSON.parse(localStorage.getItem('fichasHerramientas'));
+    const contadorGuardado = localStorage.getItem('contadorID');
+    if (contadorGuardado) contadorID = Number(contadorGuardado);
+    if (fichasGuardadas && Array.isArray(fichasGuardadas)) {
+      fichasGuardadas.forEach(ficha => {
+        crearFichaDesdeStorage(ficha);
       });
     }
   }
 
-  function crearFichaDesdeStorage(id, nombre, categoria, ubicacion, disponible, enUso, danado) {
+  // Crear ficha desde datos guardados (sin generar nuevo ID)
+  function crearFichaDesdeStorage(data) {
     const ficha = document.createElement("div");
     ficha.classList.add("ficha");
-    ficha.dataset.total = disponible + enUso + danado;
-    ficha.dataset.nombre = nombre.toLowerCase();
-    ficha.dataset.categoria = categoria;
+    ficha.dataset.total = data.disponible + data.enUso + data.danado;
+    ficha.dataset.nombre = data.nombre.toLowerCase();
+    ficha.dataset.categoria = data.categoria;
     ficha.innerHTML = `
-      <img src="pica-escoria.jpg" alt="${nombre}" />
+      <img src="pica-escoria.jpg" alt="${data.nombre}" />
       <div class="datos">
-        <p><strong>ID:</strong> ${id}</p>
-        <p><strong>Nombre:</strong> <span class="nombreTexto">${nombre}</span></p>
-        <p><strong>Categoría:</strong> <span class="categoriaTexto">${categoria}</span></p>
-        <p><strong>Ubicación:</strong> <span class="ubicacionTexto">${ubicacion}</span></p>
+        <p><strong>ID:</strong> ${data.id}</p>
+        <p><strong>Nombre:</strong> <span class="nombreTexto">${data.nombre}</span></p>
+        <p><strong>Categoría:</strong> <span class="categoriaTexto">${data.categoria}</span></p>
+        <p><strong>Ubicación:</strong> <span class="ubicacionTexto">${data.ubicacion}</span></p>
 
         <div class="cantidades">
           <div>
             Disponible
-            <button data-state="disponible">${disponible}</button>
+            <button data-state="disponible">${data.disponible}</button>
           </div>
           <div>
             En uso
-            <button data-state="en-uso">${enUso}</button>
+            <button data-state="en-uso">${data.enUso}</button>
           </div>
           <div>
             Dañado
-            <button data-state="danado">${danado}</button>
+            <button data-state="danado">${data.danado}</button>
           </div>
         </div>
         <div class="acciones">
@@ -183,13 +184,14 @@
           <button class="btnBorrar" title="Borrar tarjeta">🗑</button>
         </div>
 
-        <div class="total">Total unidades: ${disponible + enUso + danado}</div>
+        <div class="total">Total unidades: ${data.disponible + data.enUso + data.danado}</div>
       </div>
     `;
     agregarLogicaFicha(ficha);
     document.getElementById("contenedorFichas").appendChild(ficha);
   }
 
+  // Crear ficha nueva con ID generado y estados 0
   function crearFicha(nombre, categoria, ubicacion) {
     const id = generarID();
     const ficha = document.createElement("div");
@@ -232,6 +234,7 @@
     `;
     agregarLogicaFicha(ficha);
     document.getElementById("contenedorFichas").appendChild(ficha);
+    guardarEnStorage();
   }
 
   function agregarLogicaFicha(ficha) {
@@ -262,7 +265,8 @@
       btnEnUso.textContent = uso;
       btnDanado.textContent = dano;
       totalDiv.textContent = `Total unidades: ${disp + uso + dano}`;
-      guardarEnLocalStorage();
+      ficha.dataset.total = disp + uso + dano;
+      guardarEnStorage();
     }
 
     function moverUnidad(fromState, toState) {
@@ -321,7 +325,7 @@
 
     btnBorrar.addEventListener('click', () => {
       ficha.remove();
-      guardarEnLocalStorage();
+      guardarEnStorage();
     });
 
     btnEditar.addEventListener('click', () => {
@@ -341,11 +345,12 @@
         ficha.dataset.nombre = nombreSpan.textContent.toLowerCase();
         ficha.dataset.categoria = categoriaSpan.textContent;
         btnEditar.textContent = "✏";
-        guardarEnLocalStorage();
+        guardarEnStorage();
       }
     });
   }
 
+  // Función Levenshtein para búsqueda difusa
   function levenshtein(a, b) {
     const matrix = Array.from({ length: a.length + 1 }, (_, i) => [i]);
     for (let j = 1; j <= b.length; j++) matrix[0][j] = j;
@@ -384,17 +389,16 @@
     const ubicacion = document.getElementById("ubicacion").value.trim();
     if (nombre && categoria && ubicacion) {
       crearFicha(nombre, categoria, ubicacion);
-      guardarEnLocalStorage();
       this.reset();
-      filtrarFichas();
+      filtrarFichas(); // Actualiza visibilidad con filtro
     }
   });
 
   document.getElementById("busqueda").addEventListener("input", filtrarFichas);
   document.getElementById("filtroCategoria").addEventListener("change", filtrarFichas);
 
-  // Cargar fichas guardadas al inicio
-  cargarDesdeLocalStorage();
+  // Carga inicial
+  cargarDesdeStorage();
 </script>
 
 </body>
