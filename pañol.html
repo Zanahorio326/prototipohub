@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Digitalización - Inventario de Herramientas</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      padding: 20px;
+    }
+    form, .buscador {
+      background-color: white;
+      padding: 15px;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    form input, form select, form button, .buscador input, .buscador select {
+      padding: 5px;
+      font-size: 1rem;
+    }
+    .ficha {
+      display: flex;
+      background-color: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .ficha img {
+      width: 200px;
+      height: 200px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .datos {
+      padding: 15px;
+      flex-grow: 1;
+    }
+    .datos p {
+      margin: 5px 0;
+    }
+    .cantidades {
+      margin-top: 10px;
+      display: flex;
+      gap: 15px;
+    }
+    .cantidades div {
+      display: flex;
+      flex-direction: column;
+      font-weight: bold;
+      align-items: center;
+    }
+    .cantidades button {
+      font-size: 1.2rem;
+      width: 40px;
+      height: 40px;
+      margin-top: 5px;
+      cursor: pointer;
+    }
+    .total {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .acciones {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .acciones button {
+      font-size: 1.2rem;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 4px;
+      border: 1px solid #888;
+      background-color: #fff;
+      transition: background-color 0.2s;
+    }
+    .acciones button:hover {
+      background-color: #e0e0e0;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Digitalización</h1>
+
+<form id="formAgregar">
+  <input type="text" id="nombre" placeholder="Nombre" required />
+  <select id="categoria" required>
+    <option value="">Categoría</option>
+    <option value="Mecánica">Mecánica</option>
+    <option value="Electricidad">Electricidad</option>
+  </select>
+  <input type="text" id="ubicacion" placeholder="Ubicación" required />
+  <button type="submit">Agregar herramienta</button>
+</form>
+
+<div class="buscador">
+  <input type="text" id="busqueda" placeholder="Buscar por nombre..." />
+  <select id="filtroCategoria">
+    <option value="Todos">Todos</option>
+    <option value="Mecánica">Mecánica</option>
+    <option value="Electricidad">Electricidad</option>
+  </select>
+</div>
+
+<div id="contenedorFichas"></div>
+
+<script>
+  let contadorID = 0;
+
+  function guardarEnLocalStorage() {
+    const fichas = [];
+    document.querySelectorAll(".ficha").forEach(ficha => {
+      const id = ficha.querySelector("p strong").nextSibling.textContent.trim();
+      const nombre = ficha.querySelector(".nombreTexto").textContent;
+      const categoria = ficha.querySelector(".categoriaTexto").textContent;
+      const ubicacion = ficha.querySelector(".ubicacionTexto").textContent;
+      const disponible = parseInt(ficha.querySelector('button[data-state="disponible"]').textContent);
+      const enUso = parseInt(ficha.querySelector('button[data-state="en-uso"]').textContent);
+      const danado = parseInt(ficha.querySelector('button[data-state="danado"]').textContent);
+      fichas.push({ id, nombre, categoria, ubicacion, disponible, enUso, danado });
+    });
+    localStorage.setItem("inventarioHerramientas", JSON.stringify(fichas));
+    localStorage.setItem("contadorID", contadorID);
+  }
+
+  function cargarDesdeLocalStorage() {
+    const data = localStorage.getItem("inventarioHerramientas");
+    if (data) {
+      const fichas = JSON.parse(data);
+      if (localStorage.getItem("contadorID")) {
+        contadorID = parseInt(localStorage.getItem("contadorID"));
+      }
+      fichas.forEach(({ id, nombre, categoria, ubicacion, disponible, enUso, danado }) => {
+        crearFichaDesdeStorage(id, nombre, categoria, ubicacion, disponible, enUso, danado);
+      });
+    }
+  }
+
+  function crearFichaDesdeStorage(id, nombre, categoria, ubicacion, disponible, enUso, danado) {
+    const ficha = document.createElement("div");
+    ficha.classList.add("ficha");
+    ficha.dataset.total = disponible + enUso + danado;
+    ficha.dataset.nombre = nombre.toLowerCase();
+    ficha.dataset.categoria = categoria;
+    ficha.innerHTML = `
+      <img src="pica-escoria.jpg" alt="${nombre}" />
+      <div class="datos">
+        <p><strong>ID:</strong> ${id}</p>
+        <p><strong>Nombre:</strong> <span class="nombreTexto">${nombre}</span></p>
+        <p><strong>Categoría:</strong> <span class="categoriaTexto">${categoria}</span></p>
+        <p><strong>Ubicación:</strong> <span class="ubicacionTexto">${ubicacion}</span></p>
+
+        <div class="cantidades">
+          <div>
+            Disponible
+            <button data-state="disponible">${disponible}</button>
+          </div>
+          <div>
+            En uso
+            <button data-state="en-uso">${enUso}</button>
+          </div>
+          <div>
+            Dañado
+            <button data-state="danado">${danado}</button>
+          </div>
+        </div>
+        <div class="acciones">
+          <button class="btnSumarDisponible" title="Agregar unidad disponible">+</button>
+          <button class="btnReparar" title="Reparar herramienta dañada">🔧</button>
+          <button class="btnEliminarDanado" title="Eliminar unidad dañada">-</button>
+          <button class="btnEditar" title="Editar tarjeta">✏</button>
+          <button class="btnBorrar" title="Borrar tarjeta">🗑</button>
+        </div>
+
+        <div class="total">Total unidades: ${disponible + enUso + danado}</div>
+      </div>
+    `;
+    agregarLogicaFicha(ficha);
+    document.getElementById("contenedorFichas").appendChild(ficha);
+  }
+
+  function crearFicha(nombre, categoria, ubicacion) {
+    const id = generarID();
+    const ficha = document.createElement("div");
+    ficha.classList.add("ficha");
+    ficha.dataset.total = 0;
+    ficha.dataset.nombre = nombre.toLowerCase();
+    ficha.dataset.categoria = categoria;
+    ficha.innerHTML = `
+      <img src="pica-escoria.jpg" alt="${nombre}" />
+      <div class="datos">
+        <p><strong>ID:</strong> ${id}</p>
+        <p><strong>Nombre:</strong> <span class="nombreTexto">${nombre}</span></p>
+        <p><strong>Categoría:</strong> <span class="categoriaTexto">${categoria}</span></p>
+        <p><strong>Ubicación:</strong> <span class="ubicacionTexto">${ubicacion}</span></p>
+
+        <div class="cantidades">
+          <div>
+            Disponible
+            <button data-state="disponible">0</button>
+          </div>
+          <div>
+            En uso
+            <button data-state="en-uso">0</button>
+          </div>
+          <div>
+            Dañado
+            <button data-state="danado">0</button>
+          </div>
+        </div>
+        <div class="acciones">
+          <button class="btnSumarDisponible" title="Agregar unidad disponible">+</button>
+          <button class="btnReparar" title="Reparar herramienta dañada">🔧</button>
+          <button class="btnEliminarDanado" title="Eliminar unidad dañada">-</button>
+          <button class="btnEditar" title="Editar tarjeta">✏</button>
+          <button class="btnBorrar" title="Borrar tarjeta">🗑</button>
+        </div>
+
+        <div class="total">Total unidades: 0</div>
+      </div>
+    `;
+    agregarLogicaFicha(ficha);
+    document.getElementById("contenedorFichas").appendChild(ficha);
+  }
+
+  function agregarLogicaFicha(ficha) {
+    const btnDisponible = ficha.querySelector('button[data-state="disponible"]');
+    const btnEnUso = ficha.querySelector('button[data-state="en-uso"]');
+    const btnDanado = ficha.querySelector('button[data-state="danado"]');
+    const btnSumarDisponible = ficha.querySelector('.btnSumarDisponible');
+    const btnReparar = ficha.querySelector('.btnReparar');
+    const btnEliminarDanado = ficha.querySelector('.btnEliminarDanado');
+    const btnEditar = ficha.querySelector('.btnEditar');
+    const btnBorrar = ficha.querySelector('.btnBorrar');
+    const totalDiv = ficha.querySelector('.total');
+
+    const nombreSpan = ficha.querySelector('.nombreTexto');
+    const categoriaSpan = ficha.querySelector('.categoriaTexto');
+    const ubicacionSpan = ficha.querySelector('.ubicacionTexto');
+
+    function getCounts() {
+      return {
+        disponible: parseInt(btnDisponible.textContent),
+        enUso: parseInt(btnEnUso.textContent),
+        danado: parseInt(btnDanado.textContent),
+      };
+    }
+
+    function setCounts(disp, uso, dano) {
+      btnDisponible.textContent = disp;
+      btnEnUso.textContent = uso;
+      btnDanado.textContent = dano;
+      totalDiv.textContent = `Total unidades: ${disp + uso + dano}`;
+      guardarEnLocalStorage();
+    }
+
+    function moverUnidad(fromState, toState) {
+      let counts = getCounts();
+      if (counts[fromState] > 0) {
+        counts[fromState]--;
+        counts[toState]++;
+        setCounts(counts.disponible, counts.enUso, counts.danado);
+      }
+    }
+
+    btnDisponible.addEventListener('click', () => {
+      let counts = getCounts();
+      if (counts.enUso > 0) {
+        moverUnidad('enUso', 'disponible');
+      } else if (counts.danado > 0) {
+        moverUnidad('danado', 'disponible');
+      }
+    });
+
+    btnEnUso.addEventListener('click', () => {
+      let counts = getCounts();
+      if (counts.disponible > 0) {
+        moverUnidad('disponible', 'enUso');
+      } else if (counts.danado > 0) {
+        moverUnidad('danado', 'enUso');
+      }
+    });
+
+    btnDanado.addEventListener('click', () => {
+      let counts = getCounts();
+      if (counts.disponible > 0) {
+        moverUnidad('disponible', 'danado');
+      } else if (counts.enUso > 0) {
+        moverUnidad('enUso', 'danado');
+      }
+    });
+
+    btnSumarDisponible.addEventListener('click', () => {
+      let counts = getCounts();
+      counts.disponible++;
+      setCounts(counts.disponible, counts.enUso, counts.danado);
+    });
+
+    btnReparar.addEventListener('click', () => {
+      moverUnidad('danado', 'disponible');
+    });
+
+    btnEliminarDanado.addEventListener('click', () => {
+      let counts = getCounts();
+      if (counts.danado > 0) {
+        counts.danado--;
+        setCounts(counts.disponible, counts.enUso, counts.danado);
+      }
+    });
+
+    btnBorrar.addEventListener('click', () => {
+      ficha.remove();
+      guardarEnLocalStorage();
+    });
+
+    btnEditar.addEventListener('click', () => {
+      if (btnEditar.textContent === "✏") {
+        nombreSpan.innerHTML = `<input type="text" value="${nombreSpan.textContent}" />`;
+        categoriaSpan.innerHTML = `
+          <select>
+            <option ${categoriaSpan.textContent === "Mecánica" ? "selected" : ""}>Mecánica</option>
+            <option ${categoriaSpan.textContent === "Electricidad" ? "selected" : ""}>Electricidad</option>
+          </select>`;
+        ubicacionSpan.innerHTML = `<input type="text" value="${ubicacionSpan.textContent}" />`;
+        btnEditar.textContent = "💾";
+      } else {
+        nombreSpan.textContent = nombreSpan.querySelector('input').value;
+        categoriaSpan.textContent = categoriaSpan.querySelector('select').value;
+        ubicacionSpan.textContent = ubicacionSpan.querySelector('input').value;
+        ficha.dataset.nombre = nombreSpan.textContent.toLowerCase();
+        ficha.dataset.categoria = categoriaSpan.textContent;
+        btnEditar.textContent = "✏";
+        guardarEnLocalStorage();
+      }
+    });
+  }
+
+  function levenshtein(a, b) {
+    const matrix = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+    for (let j = 1; j <= b.length; j++) matrix[0][j] = j;
+    for (let i = 1; i <= a.length; i++) {
+      for (let j = 1; j <= b.length; j++) {
+        if (a[i - 1] === b[j - 1]) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+    return matrix[a.length][b.length];
+  }
+
+  function filtrarFichas() {
+    const texto = document.getElementById("busqueda").value.toLowerCase().trim();
+    const categoriaFiltro = document.getElementById("filtroCategoria").value;
+    document.querySelectorAll(".ficha").forEach(ficha => {
+      const nombre = ficha.dataset.nombre;
+      const categoria = ficha.dataset.categoria;
+      const coincideCategoria = categoriaFiltro === "Todos" || categoria === categoriaFiltro;
+      const coincideNombre = !texto || levenshtein(nombre, texto) <= 2 || nombre.includes(texto);
+      ficha.style.display = coincideCategoria && coincideNombre ? "" : "none";
+    });
+  }
+
+  document.getElementById("formAgregar").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const nombre = document.getElementById("nombre").value.trim();
+    const categoria = document.getElementById("categoria").value;
+    const ubicacion = document.getElementById("ubicacion").value.trim();
+    if (nombre && categoria && ubicacion) {
+      crearFicha(nombre, categoria, ubicacion);
+      guardarEnLocalStorage();
+      this.reset();
+      filtrarFichas();
+    }
+  });
+
+  document.getElementById("busqueda").addEventListener("input", filtrarFichas);
+  document.getElementById("filtroCategoria").addEventListener("change", filtrarFichas);
+
+  // Cargar fichas guardadas al inicio
+  cargarDesdeLocalStorage();
+</script>
+
+</body>
+</html>
