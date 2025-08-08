@@ -91,7 +91,7 @@
 </head>
 <body>
 
-<h1>Digitalización V0.2</h1>
+<h1>Digitalización v0.3</h1>
 
 <form id="formAgregar">
   <input type="text" id="nombre" placeholder="Nombre" required />
@@ -118,11 +118,13 @@
 <script>
   let contadorID = 0;
 
-  // Función para guardar el estado actual de las fichas en localStorage
+  // Guardar en localStorage
   function guardarEnStorage() {
     const fichas = [];
     document.querySelectorAll('.ficha').forEach(ficha => {
-      const id = ficha.querySelector('p strong').nextSibling.textContent.trim();
+      // Selecciono el párrafo que tiene el ID buscando el que contiene "ID:"
+      const idP = Array.from(ficha.querySelectorAll('p')).find(p => p.textContent.includes('ID:'));
+      const id = idP ? idP.textContent.replace('ID:', '').trim() : '';
       const nombre = ficha.querySelector('.nombreTexto').textContent;
       const categoria = ficha.querySelector('.categoriaTexto').textContent;
       const ubicacion = ficha.querySelector('.ubicacionTexto').textContent;
@@ -135,7 +137,7 @@
     localStorage.setItem('contadorID', contadorID);
   }
 
-  // Función para cargar fichas desde localStorage
+  // Cargar desde localStorage
   function cargarDesdeStorage() {
     const fichasGuardadas = JSON.parse(localStorage.getItem('fichasHerramientas'));
     const contadorGuardado = localStorage.getItem('contadorID');
@@ -147,7 +149,6 @@
     }
   }
 
-  // Crear ficha desde datos guardados (sin generar nuevo ID)
   function crearFichaDesdeStorage(data) {
     const ficha = document.createElement("div");
     ficha.classList.add("ficha");
@@ -191,7 +192,6 @@
     document.getElementById("contenedorFichas").appendChild(ficha);
   }
 
-  // Crear ficha nueva con ID generado y estados 0
   function crearFicha(nombre, categoria, ubicacion) {
     const id = generarID();
     const ficha = document.createElement("div");
@@ -350,7 +350,14 @@
     });
   }
 
-  // Función Levenshtein para búsqueda difusa
+  // Generar ID: A000, A001, etc
+  function generarID() {
+    const id = "A" + contadorID.toString().padStart(3, "0");
+    contadorID++;
+    return id;
+  }
+
+  // Levenshtein para búsqueda difusa
   function levenshtein(a, b) {
     const matrix = Array.from({ length: a.length + 1 }, (_, i) => [i]);
     for (let j = 1; j <= b.length; j++) matrix[0][j] = j;
@@ -390,7 +397,7 @@
     if (nombre && categoria && ubicacion) {
       crearFicha(nombre, categoria, ubicacion);
       this.reset();
-      filtrarFichas(); // Actualiza visibilidad con filtro
+      filtrarFichas();
     }
   });
 
@@ -400,6 +407,7 @@
   // Carga inicial
   cargarDesdeStorage();
 </script>
-
 </body>
 </html>
+
+
