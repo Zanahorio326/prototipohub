@@ -91,7 +91,7 @@
 </head>
 <body>
 
-<h1>Digitalización V0.3</h1>
+<h1>Digitalización V0.4</h1>
 
 <form id="formAgregar">
   <input type="text" id="nombre" placeholder="Nombre" required />
@@ -101,6 +101,7 @@
     <option value="Electricidad">Electricidad</option>
   </select>
   <input type="text" id="ubicacion" placeholder="Ubicación" required />
+  <input type="file" id="imagen" accept="image/*" />
   <button type="submit">Agregar herramienta</button>
 </form>
 
@@ -117,12 +118,54 @@
 
 <script>
   let contadorID = 0;
+  let imagenParaNuevaFicha = null;
+
+  // Procesar imagen para redimensionar y convertir a base64 antes de guardar
+  function procesarImagen(file, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const maxDim = 300;
+        let { width, height } = img;
+        if (width > height && width > maxDim) {
+          height = Math.round(height * maxDim / width);
+          width = maxDim;
+        } else if (height > width && height > maxDim) {
+          width = Math.round(width * maxDim / height);
+          height = maxDim;
+        } else if (width === height && width > maxDim) {
+          width = maxDim;
+          height = maxDim;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        callback(dataUrl);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  document.getElementById('imagen').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) {
+      procesarImagen(file, (base64img) => {
+        imagenParaNuevaFicha = base64img;
+      });
+    } else {
+      imagenParaNuevaFicha = null;
+    }
+  });
 
   // Guardar en localStorage
   function guardarEnStorage() {
     const fichas = [];
     document.querySelectorAll('.ficha').forEach(ficha => {
-      // Selecciono el párrafo que tiene el ID buscando el que contiene "ID:"
       const idP = Array.from(ficha.querySelectorAll('p')).find(p => p.textContent.includes('ID:'));
       const id = idP ? idP.textContent.replace('ID:', '').trim() : '';
       const nombre = ficha.querySelector('.nombreTexto').textContent;
@@ -131,7 +174,8 @@
       const disponible = parseInt(ficha.querySelector('button[data-state="disponible"]').textContent);
       const enUso = parseInt(ficha.querySelector('button[data-state="en-uso"]').textContent);
       const danado = parseInt(ficha.querySelector('button[data-state="danado"]').textContent);
-      fichas.push({ id, nombre, categoria, ubicacion, disponible, enUso, danado });
+      const imgSrc = ficha.querySelector('img').src || '';
+      fichas.push({ id, nombre, categoria, ubicacion, disponible, enUso, danado, imgSrc });
     });
     localStorage.setItem('fichasHerramientas', JSON.stringify(fichas));
     localStorage.setItem('contadorID', contadorID);
@@ -156,7 +200,7 @@
     ficha.dataset.nombre = data.nombre.toLowerCase();
     ficha.dataset.categoria = data.categoria;
     ficha.innerHTML = `
-      <img src="pica-escoria.jpg" alt="${data.nombre}" />
+      <img src="${data.imgSrc || 'pica-escoria.jpg'}" alt="${data.nombre}" />
       <div class="datos">
         <p><strong>ID:</strong> ${data.id}</p>
         <p><strong>Nombre:</strong> <span class="nombreTexto">${data.nombre}</span></p>
@@ -194,13 +238,16 @@
 
   function crearFicha(nombre, categoria, ubicacion) {
     const id = generarID();
+    const imgSrc = imagenParaNuevaFicha || 'pica-escoria.jpg';
+    imagenParaNuevaFicha = null; // resetear para próxima ficha
+    document.getElementById('imagen').value = ''; // reset input file
     const ficha = document.createElement("div");
     ficha.classList.add("ficha");
     ficha.dataset.total = 0;
     ficha.dataset.nombre = nombre.toLowerCase();
     ficha.dataset.categoria = categoria;
     ficha.innerHTML = `
-      <img src="pica-escoria.jpg" alt="${nombre}" />
+      <img src="${imgSrc}" alt="${nombre}" />
       <div class="datos">
         <p><strong>ID:</strong> ${id}</p>
         <p><strong>Nombre:</strong> <span class="nombreTexto">${nombre}</span></p>
@@ -350,14 +397,12 @@
     });
   }
 
-  // Generar ID: A000, A001, etc
   function generarID() {
     const id = "A" + contadorID.toString().padStart(3, "0");
     contadorID++;
     return id;
   }
 
-  // Levenshtein para búsqueda difusa
   function levenshtein(a, b) {
     const matrix = Array.from({ length: a.length + 1 }, (_, i) => [i]);
     for (let j = 1; j <= b.length; j++) matrix[0][j] = j;
@@ -397,6 +442,7 @@
     if (nombre && categoria && ubicacion) {
       crearFicha(nombre, categoria, ubicacion);
       this.reset();
+      imagenParaNuevaFicha = null; // Reset imagen para siguiente carga
       filtrarFichas();
     }
   });
@@ -409,5 +455,4 @@
 </script>
 </body>
 </html>
-
 
