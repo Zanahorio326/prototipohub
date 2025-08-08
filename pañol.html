@@ -2,7 +2,9 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Digitalización - Inventario de Herramientas</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -87,11 +89,43 @@
     .acciones button:hover {
       background-color: #e0e0e0;
     }
+
+    /* QR reader styles */
+    #qrSection {
+      background: white;
+      padding: 12px;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    #reader {
+      width: 320px;
+      max-width: 100%;
+    }
+    #scanStatus {
+      flex: 1;
+      font-weight: bold;
+      color: #333;
+    }
+    @media (max-width: 600px) {
+      .ficha { flex-direction: column; }
+      .ficha img { width: 100%; height: auto; }
+    }
   </style>
 </head>
 <body>
 
-<h1>Digitalización V0.4</h1>
+<h1>Digitalización V0.5</h1>
+
+<!-- Sección del escáner QR integrado -->
+<div id="qrSection">
+  <div id="reader"></div>
+  <div id="scanStatus">Escanea un código...</div>
+</div>
 
 <form id="formAgregar">
   <input type="text" id="nombre" placeholder="Nombre" required />
@@ -167,7 +201,7 @@
     const fichas = [];
     document.querySelectorAll('.ficha').forEach(ficha => {
       const idP = Array.from(ficha.querySelectorAll('p')).find(p => p.textContent.includes('ID:'));
-      const id = idP ? idP.textContent.replace('ID:', '').trim() : '';
+      const id = idP ? idP.textContent.replace('ID:', '').trim() : (ficha.dataset.id || '');
       const nombre = ficha.querySelector('.nombreTexto').textContent;
       const categoria = ficha.querySelector('.categoriaTexto').textContent;
       const ubicacion = ficha.querySelector('.ubicacionTexto').textContent;
@@ -199,6 +233,7 @@
     ficha.dataset.total = data.disponible + data.enUso + data.danado;
     ficha.dataset.nombre = data.nombre.toLowerCase();
     ficha.dataset.categoria = data.categoria;
+    ficha.dataset.id = data.id; // asignar id como atributo data
     ficha.innerHTML = `
       <img src="${data.imgSrc || 'pica-escoria.jpg'}" alt="${data.nombre}" />
       <div class="datos">
@@ -246,6 +281,7 @@
     ficha.dataset.total = 0;
     ficha.dataset.nombre = nombre.toLowerCase();
     ficha.dataset.categoria = categoria;
+    ficha.dataset.id = id; // asignar id como atributo data
     ficha.innerHTML = `
       <img src="${imgSrc}" alt="${nombre}" />
       <div class="datos">
@@ -318,6 +354,10 @@
 
     function moverUnidad(fromState, toState) {
       let counts = getCounts();
+      if (fromState === 'enUso') fromState = 'enUso';
+      if (fromState === 'danado') fromState = 'danado';
+      if (fromState === 'disponible') fromState = 'disponible';
+
       if (counts[fromState] > 0) {
         counts[fromState]--;
         counts[toState]++;
@@ -452,6 +492,99 @@
 
   // Carga inicial
   cargarDesdeStorage();
+
+  // ---------------------------
+  // Integración del lector QR
+  // ---------------------------
+  const scanStatus = document.getElementById('scanStatus');
+  let lastScanTime = 0;
+  const cooldown = 3000; // 3 segundos
+
+  // Función que procesa el ID leído y acciona el botón "En uso"
+  function procesarIDLeido(idLeido) {
+    if (!idLeido) return;
+    const id = idLeido.trim();
+    // Buscar ficha por dataset.id
+    const ficha = document.querySelector(`.ficha[data-id="${id}"]`);
+    if (ficha) {
+      // Simular pulsación del botón "En uso" para reutilizar la lógica existente
+      const btnEnUso = ficha.querySelector('button[data-state="en-uso"]');
+      if (btnEnUso) {
+        // Actualizar mensaje de estado antes de la acción (sin alertas)
+        scanStatus.textContent = `QR detectado: ${id} — Actualizando a "En uso"...`;
+        // Llamar al evento click (esto ejecuta la lógica definida en agregarLogicaFicha)
+        btnEnUso.click();
+        // Mostrar resultado después de acción
+        scanStatus.textContent = `QR detectado: ${id} — Marcado como en uso.`;
+      } else {
+        scanStatus.textContent = `QR detectado: ${id} — Botón "En uso" no encontrado.`;
+      }
+    } else {
+      scanStatus.textContent = `QR detectado: ${id} — ID no registrado.`;
+    }
+  }
+
+  // Inicializar Html5Qrcode y cámara
+  const html5QrCode = new Html5Qrcode("reader");
+  Html5Qrcode.getCameras().then(cameras => {
+    if (cameras && cameras.length) {
+      // Elegir la cámara trasera si existe (por nombre) o la primera
+      let cameraId = cameras[0].id;
+      for (const cam of cameras) {
+        const label = (cam.label || '').toLowerCase();
+        if (label.includes('back') || label.includes('rear') || label.includes('trasera')) {
+          cameraId = cam.id;
+          break;
+        }
+      }
+
+      html5QrCode.start(
+        cameraId,
+        { fps: 10, qrbox: 250 },
+        (decodedText, decodedResult) => {
+          try {
+            const now = Date.now();
+            if (now - lastScanTime < cooldown) {
+              // en cooldown, ignorar
+              return;
+            }
+            lastScanTime = now;
+            // procesar el texto leido (sin ventanas emergentes)
+            procesarIDLeido(decodedText);
+            // después de procesar, mantener mensaje listo para próximo escaneo tras cooldown
+            setTimeout(() => {
+              // Solo restablecer si no se ha escaneado algo nuevo en el intertanto
+              if (Date.now() - lastScanTime >= cooldown) {
+                scanStatus.textContent = 'Listo para escanear otro QR';
+              }
+            }, cooldown);
+          } catch (err) {
+            console.error('Error procesando QR:', err);
+          }
+        },
+        (errorMessage) => {
+          // lecturas fallidas continuas se ignoran (no mostramos alertas)
+          // console.debug('No QR', errorMessage);
+        }
+      ).catch(err => {
+        console.error('No se pudo iniciar la cámara:', err);
+        scanStatus.textContent = 'Error al acceder a la cámara';
+      });
+    } else {
+      console.warn('No se detectaron cámaras');
+      scanStatus.textContent = 'No se detectó cámara';
+    }
+  }).catch(err => {
+    console.error('Error obteniendo cámaras:', err);
+    scanStatus.textContent = 'Error obteniendo cámaras';
+  });
+
+  // Detener la cámara si la página se cierra/navega (buena práctica)
+  window.addEventListener('beforeunload', () => {
+    if (html5QrCode && html5QrCode.getState && html5QrCode.getState() === Html5QrcodeScannerState.SCANNING) {
+      try { html5QrCode.stop(); } catch (e) { /* ignore */ }
+    }
+  });
 </script>
 </body>
 </html>
