@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Libro responsivo con vista completa y zoom</title>
+  <style>
+    :root{ --gap:18px; }
+    html,body{height:100%; margin:0}
+    body{
+      display:flex; align-items:center; justify-content:center; height:100vh;
+      background:linear-gradient(180deg,#d1d5db,#9ca3af);
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+
+    .stage{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+    .single, .spread{ display:flex; align-items:center; justify-content:center; }
+
+    .page{
+      cursor:pointer;
+      width: calc(var(--page-w) * 1px);
+      height: calc(var(--page-h) * 1px);
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(2,6,23,0.32);
+      border-radius: 10px;
+      overflow: hidden;
+      box-sizing: border-box;
+      padding: 16px;
+      display:flex; flex-direction:column; gap:8px;
+      transition: width .22s ease, height .22s ease;
+    }
+
+    .spread{ gap: var(--gap); }
+    .page img{ max-width:100%; height:auto; display:block }
+    h1,h2{ margin:0; font-weight:600 }
+    p{ margin:0; color:#374151 }
+
+    .hint{ position: absolute; bottom:18px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.35); color:#fff; padding:6px 12px; border-radius:999px; font-size:.85rem }
+
+    /* Vista en pantalla completa */
+    .fullscreen-overlay{
+      position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; display:flex; align-items:center; justify-content:center; flex-direction:column; z-index:1000;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .fullscreen-overlay img, .fullscreen-overlay .page-content{
+      width:90%; max-width:1200px;
+    }
+    .close-btn{
+      position:absolute; top:16px; right:16px; font-size:1.8rem; background:rgba(0,0,0,0.35); color:#fff; border:none; border-radius:50%; padding:6px 12px; cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage"></div>
+  <div class="hint">Desliza ← o →</div>
+
+  <script>
+    (function(){
+      const AR = 3/4;
+      const MARGIN = 0.04;
+      const stage = document.getElementById('stage');
+      let current = 'cover';
+      let spreadIndex = 0;
+
+      const CONTENT = [
+        ['Contenido izquierdo del primer par', 'Contenido derecho del primer par'],
+        ['Contenido izquierdo del segundo par', 'Contenido derecho del segundo par'],
+      ];
+
+      function computeSingleSize(){
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const availW = vw * (1 - 2*MARGIN);
+        const availH = vh * (1 - 2*MARGIN);
+        const height = Math.min(availH, availW / AR);
+        const width = Math.round(height * AR);
+        return {w: Math.round(width), h: Math.round(height)};
+      }
+
+      function computeDoubleSize(singleSize){
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const gap = Math.max(12, Math.round(vw * 0.03));
+        const availW = vw * (1 - 2*MARGIN) - gap;
+        const perPageMaxW = availW / 2;
+        const maxH = vh * (1 - 2*MARGIN);
+        let height = Math.min(maxH, perPageMaxW / AR);
+        let width = Math.round(height * AR);
+        if(width > singleSize.w){
+          width = singleSize.w;
+          height = Math.round(width / AR);
+        }
+        return {w: Math.round(width), h: Math.round(height), gap};
+      }
+
+      function openFullscreen(contentHtml){
+        // Permitir zoom
+        document.querySelector('meta[name="viewport"]').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=yes');
+
+        const overlay = document.createElement('div');
+        overlay.className = 'fullscreen-overlay';
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'close-btn';
+        closeBtn.innerText = '❎';
+        closeBtn.onclick = () => {
+          overlay.remove();
+          // Restaurar meta viewport original
+          document.querySelector('meta[name="viewport"]').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+        };
+        const pageDiv = document.createElement('div');
+        pageDiv.className = 'page-content';
+        pageDiv.innerHTML = contentHtml;
+        overlay.appendChild(closeBtn);
+        overlay.appendChild(pageDiv);
+        document.body.appendChild(overlay);
+      }
+
+      function renderCover(){
+        stage.innerHTML = '';
+        stage.className = 'stage single';
+        const s = computeSingleSize();
+        const page = document.createElement('div');
+        page.className = 'page';
+        page.style.setProperty('--page-w', s.w);
+        page.style.setProperty('--page-h', s.h);
+        page.innerHTML = `<div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center"><h1>Portada</h1><p>Subtítulo o autor</p></div>`;
+        page.onclick = () => openFullscreen(page.innerHTML);
+        stage.appendChild(page);
+      }
+
+      function renderSpread(idx){
+        stage.innerHTML = '';
+        stage.className = 'stage spread';
+        const single = computeSingleSize();
+        const d = computeDoubleSize(single);
+        const container = document.createElement('div');
+        container.className = 'spread';
+        container.style.setProperty('--gap', d.gap + 'px');
+
+        const left = document.createElement('div');
+        left.className = 'page';
+        left.style.setProperty('--page-w', d.w);
+        left.style.setProperty('--page-h', d.h);
+        left.innerHTML = `<div style="flex:1; overflow:auto"><h2>Contenido</h2><p>${CONTENT[idx % CONTENT.length][0]}</p></div>`;
+        left.onclick = () => openFullscreen(left.innerHTML);
+
+        const right = document.createElement('div');
+        right.className = 'page';
+        right.style.setProperty('--page-w', d.w);
+        right.style.setProperty('--page-h', d.h);
+        right.innerHTML = `<div style="flex:1; overflow:auto"><h2>Contenido</h2><p>${CONTENT[idx % CONTENT.length][1]}</p></div>`;
+        right.onclick = () => openFullscreen(right.innerHTML);
+
+        container.appendChild(left);
+        container.appendChild(right);
+        stage.appendChild(container);
+      }
+
+      function render(){
+        if(current === 'cover') renderCover();
+        else renderSpread(spreadIndex);
+      }
+
+      let sx = 0;
+      stage.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, {passive:true});
+      stage.addEventListener('touchend', e => {
+        const ex = e.changedTouches[0].clientX;
+        const dx = sx - ex;
+        if (dx > 40) {
+          if(current === 'cover'){
+            current = 'spread'; spreadIndex = 0;
+          } else {
+            spreadIndex++;
+            if(spreadIndex >= CONTENT.length) spreadIndex = CONTENT.length - 1;
+          }
+          render();
+        } else if (dx < -40) {
+          if(current === 'spread' && spreadIndex > 0){
+            spreadIndex--;
+          } else {
+            current = 'cover'; spreadIndex = 0;
+          }
+          render();
+        }
+      }, {passive:true});
+
+      window.addEventListener('resize', render);
+      window.addEventListener('orientationchange', render);
+      render();
+    })();
+  </script>
+</body>
+</html>
