@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Libro responsivo con portada GIF completa</title>
+  <title>Libro responsivo con imágenes</title>
   <style>
     html,body{height:100%; margin:0; padding:0; overflow:hidden;}
     body{
@@ -48,14 +48,29 @@
   <script>
     (function(){
       const AR = 3/4;
-      const MARGIN = 0.04; // margen externo relativo al ancho
+      const MARGIN = 0.04;
       const stage = document.getElementById('stage');
       let current = 'cover';
       let spreadIndex = 0;
 
-      const CONTENT = [
-        ['Contenido izquierdo del primer par', 'Contenido derecho del primer par'],
-        ['Contenido izquierdo del segundo par', 'Contenido derecho del segundo par'],
+      const COVER_GIF = 'https://zanahorio326.github.io/prototipohub/portada.gif';
+      const IMAGES = [
+        'https://zanahorio326.github.io/prototipohub/1.jpg',
+        'https://zanahorio326.github.io/prototipohub/2.jpg',
+        'https://zanahorio326.github.io/prototipohub/3.jpg',
+        'https://zanahorio326.github.io/prototipohub/4.jpg',
+        'https://zanahorio326.github.io/prototipohub/5.jpg',
+        'https://zanahorio326.github.io/prototipohub/6.jpg',
+        'https://zanahorio326.github.io/prototipohub/7.jpg',
+        'https://zanahorio326.github.io/prototipohub/8.jpg',
+        'https://zanahorio326.github.io/prototipohub/9.jpg',
+        'https://zanahorio326.github.io/prototipohub/10.jpg',
+        'https://zanahorio326.github.io/prototipohub/11.jpg',
+        'https://zanahorio326.github.io/prototipohub/12.jpg',
+        'https://zanahorio326.github.io/prototipohub/13.jpg',
+        'https://zanahorio326.github.io/prototipohub/14.jpg',
+        'https://zanahorio326.github.io/prototipohub/15.jpg',
+        'https://zanahorio326.github.io/prototipohub/16.jpg'
       ];
 
       function computeSingleSize(){
@@ -107,7 +122,7 @@
         page.style.width = s.w + 'px';
         page.style.height = s.h + 'px';
         page.style.borderRadius = '10px';
-        page.innerHTML = `<img src="https://zanahorio326.github.io/prototipohub/portada.gif">`;
+        page.innerHTML = `<img src="${COVER_GIF}">`;
         page.onclick = () => openFullscreen(page.innerHTML);
         stage.appendChild(page);
       }
@@ -121,22 +136,29 @@
         container.className = 'spread';
         container.style.setProperty('--gap', d.gap + 'px');
 
+        const leftIndex = idx*2; // corregido para retraso, 0 es la página 2 real
+        const rightIndex = 1 + idx*2;
+
+        if(leftIndex >= IMAGES.length) return;
+
         const left = document.createElement('div');
         left.className = 'page';
         left.style.width = d.w + 'px';
         left.style.height = d.h + 'px';
-        left.innerHTML = `<div style="flex:1; overflow:auto"><h2>Contenido</h2><p>${CONTENT[idx % CONTENT.length][0]}</p></div>`;
+        left.innerHTML = `<img src="${IMAGES[leftIndex]}">`;
         left.onclick = () => openFullscreen(left.innerHTML);
 
         const right = document.createElement('div');
         right.className = 'page';
         right.style.width = d.w + 'px';
         right.style.height = d.h + 'px';
-        right.innerHTML = `<div style="flex:1; overflow:auto"><h2>Contenido</h2><p>${CONTENT[idx % CONTENT.length][1]}</p></div>`;
-        right.onclick = () => openFullscreen(right.innerHTML);
+        if(rightIndex < IMAGES.length){
+          right.innerHTML = `<img src="${IMAGES[rightIndex]}">`;
+          right.onclick = () => openFullscreen(right.innerHTML);
+        }
 
         container.appendChild(left);
-        container.appendChild(right);
+        if(rightIndex < IMAGES.length) container.appendChild(right);
         stage.appendChild(container);
       }
 
@@ -155,7 +177,7 @@
             current = 'spread'; spreadIndex = 0;
           } else {
             spreadIndex++;
-            if(spreadIndex >= CONTENT.length) spreadIndex = CONTENT.length - 1;
+            if(spreadIndex*2 >= IMAGES.length) spreadIndex--;
           }
           render();
         } else if (dx < -40) {
