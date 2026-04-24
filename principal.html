@@ -19,13 +19,41 @@
       line-height: 1.6;
     }
 
+    /* ========= ESTILOS DE LOS BANNERS DE ANUNCIO ========= */
+    .ad-placeholder {
+      background: #4b5563;
+      color: #ef4444;
+      text-align: center;
+      font-weight: bold;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px dashed #ef4444;
+    }
+
+    .ad-top {
+      width: 100%;
+      height: 90px;
+      position: sticky;
+      top: 0;
+      z-index: 1001;
+    }
+
+    .ad-bottom {
+      width: 100%;
+      height: 90px; /* Tamaño ajustado para visibilidad óptima */
+      margin-top: 20px;
+      border-radius: 15px;
+    }
+
     /* ========= ESTILOS DEL TICKER ========= */
     .ticker-container {
       background: #0a0f1a;
       border-bottom: 2px solid #3b82f6;
       border-top: 2px solid #3b82f6;
       position: sticky;
-      top: 0;
+      top: 90px; 
       z-index: 1000;
       overflow: hidden;
       white-space: nowrap;
@@ -39,7 +67,6 @@
       padding: 12px 0;
     }
 
-    /* Pausa al pasar el mouse */
     .ticker-container:hover .ticker {
       animation-play-state: paused;
     }
@@ -72,26 +99,17 @@
     }
 
     @keyframes ticker-scroll {
-      0% {
-        transform: translateX(100%);
-      }
-      100% {
-        transform: translateX(-100%);
-      }
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
     }
 
-    /* Ajuste para pantallas pequeñas */
     @media (max-width: 768px) {
-      .ticker {
-        animation-duration: 60s;
-      }
-      .ticker-item {
-        font-size: 0.8rem;
-        margin-right: 25px;
-      }
+      .ticker { animation-duration: 60s; }
+      .ticker-item { font-size: 0.8rem; margin-right: 25px; }
+      .ad-top { height: 60px; }
+      .ticker-container { top: 60px; }
     }
 
-    /* ========= RESTO DE TU ESTILO ========= */
     header {
       padding: 20px;
       background: #1e293b;
@@ -169,13 +187,8 @@
       font-weight: 600;
     }
 
-    .btn-toggle:hover {
-      background: #475569;
-    }
-
-    .hidden {
-      display: none;
-    }
+    .btn-toggle:hover { background: #475569; }
+    .hidden { display: none; }
 
     .analysis-point {
       border-left: 4px solid #3b82f6;
@@ -227,9 +240,7 @@
       cursor: pointer;
     }
 
-    .calc-btn:hover {
-      background: #1d4ed8;
-    }
+    .calc-btn:hover { background: #1d4ed8; }
 
     #calc-result {
       margin-top: 15px;
@@ -239,7 +250,6 @@
       text-align: center;
     }
 
-    /* Indicador de carga del ticker */
     .ticker-loading {
       display: inline-block;
       padding: 12px;
@@ -249,6 +259,8 @@
   </style>
 </head>
 <body>
+
+<div class="ad-placeholder ad-top">Futuro anuncio</div>
 
 <div class="ticker-container">
   <div class="ticker" id="newsTicker">
@@ -299,15 +311,15 @@
     <div id="geo-impact" class="hidden">
       <div class="geo-point">
         <h4>Canal de Energía y Transporte</h4>
-        <p>La inestabilidad en rutas marítimas críticas (como el Estrecho de Ormuz) genera volatilidad en el precio del petróleo. Esto incrementa los costos de producción y fletes internacionales, trasladando el gasto directamente al consumidor final.</p>
+        <p>La inestabilidad en rutas marítimas críticas genera volatilidad en el precio del petróleo.</p>
       </div>
       <div class="geo-point">
         <h4>Canal de Alimentos y Materias Primas</h4>
-        <p>Las interrupciones en zonas de alta producción agrícola afectan la exportación de fertilizantes y granos básicos. La escasez relativa de estos insumos presiona al alza los precios de la canasta alimentaria global por mayores costos de cultivo.</p>
+        <p>Las interrupciones en zonas de alta producción agrícola afectan la exportación de fertilizantes.</p>
       </div>
       <div class="geo-point">
         <h4>Fragmentación en Bloques Económicos</h4>
-        <p>La división del comercio en bloques geopolíticos rompe el concepto de "mercado único". Esta fragmentación obliga a las empresas a duplicar cadenas de suministro en regiones más seguras pero menos eficientes, encareciendo la tecnología y manufactura.</p>
+        <p>La división del comercio en bloques geopolíticos rompe el concepto de "mercado único".</p>
       </div>
     </div>
   </div>
@@ -320,10 +332,11 @@
     <button class="calc-btn" onclick="calc()">Calcular Interés Compuesto</button>
     <div id="calc-result" class="hidden"></div>
   </div>
+
+  <div class="ad-placeholder ad-bottom">Futuro anuncio</div>
 </div>
 
 <script>
-// ========= FUNCIONES EXISTENTES =========
 function toggle(id) {
   document.getElementById(id).classList.toggle('hidden');
 }
@@ -340,57 +353,33 @@ function calc() {
   }
 }
 
-// ========= FUNCIONES DEL TICKER (NOTICIAS EN TIEMPO REAL) =========
 async function cargarNoticiasEconomia() {
   const tickerElement = document.getElementById('newsTicker');
-  
   try {
     const apiKey = 'TU_API_KEY_AQUI'; 
     const url = `https://newsapi.org/v2/top-headlines?country=us&category=business&apiKey=${apiKey}`;
-    
     const respuesta = await fetch(url);
     const datos = await respuesta.json();
-    
     if (datos.status === 'ok' && datos.articles.length > 0) {
       let html = '';
-      datos.articles.forEach((articulo, index) => {
+      datos.articles.forEach((articulo) => {
         if (articulo.title && articulo.title !== '[Removed]') {
           let titulo = articulo.title.length > 100 ? articulo.title.substring(0, 100) + '...' : articulo.title;
-          html += `
-            <span class="ticker-item">
-              📊 <a href="${articulo.url}" target="_blank" rel="noopener noreferrer">${titulo}</a>
-            </span>
-            <span class="ticker-separator">◆</span>
-          `;
+          html += `<span class="ticker-item">📊 <a href="${articulo.url}" target="_blank" rel="noopener noreferrer">${titulo}</a></span><span class="ticker-separator">◆</span>`;
         }
       });
-      
-      if (html === '') {
-        html = '<span class="ticker-item">📰 No se pudieron cargar noticias en este momento. Reintentando...</span>';
-      }
-      
-      tickerElement.innerHTML = html;
-    } else {
-      throw new Error('No se recibieron noticias');
-    }
-    
+      tickerElement.innerHTML = html || '<span class="ticker-item">📰 No se pudieron cargar noticias.</span>';
+    } else { throw new Error(); }
   } catch (error) {
-    console.error('Error cargando noticias:', error);
-    // Mostrar noticias de respaldo basadas en eventos reales recientes
     tickerElement.innerHTML = `
       <span class="ticker-item">📈 La Reserva Federal mantiene los tipos de interés en máximos de 20 años</span>
       <span class="ticker-separator">◆</span>
-      <span class="ticker-item">🏭 La inflación en la Eurozona se modera pero el sector servicios sigue tensionado</span>
+      <span class="ticker-item">🏭 La inflación en la Eurozona se modera</span>
       <span class="ticker-separator">◆</span>
-      <span class="ticker-item">🛢️ OPEP+ mantiene los recortes voluntarios de producción de petróleo</span>
-      <span class="ticker-separator">◆</span>
-      <span class="ticker-item">📊 El Nikkei alcanza niveles récord tras el cambio de política del Banco de Japón</span>
-      <span class="ticker-separator">◆</span>
-      <span class="ticker-item">🏦 El Banco Central Europeo prepara el terreno para posibles recortes de tipos en verano</span>
+      <span class="ticker-item">🛢️ OPEP+ mantiene los recortes de producción</span>
     `;
   }
 }
-
 cargarNoticiasEconomia();
 setInterval(cargarNoticiasEconomia, 300000);
 </script>
