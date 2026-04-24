@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Educación Financiera - Noticias en Tiempo Real</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      line-height: 1.6;
+    }
+
+    /* ========= ESTILOS DEL TICKER ========= */
+    .ticker-container {
+      background: #0a0f1a;
+      border-bottom: 2px solid #3b82f6;
+      border-top: 2px solid #3b82f6;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      overflow: hidden;
+      white-space: nowrap;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .ticker {
+      display: inline-block;
+      white-space: nowrap;
+      animation: ticker-scroll 40s linear infinite;
+      padding: 12px 0;
+    }
+
+    /* Pausa al pasar el mouse */
+    .ticker-container:hover .ticker {
+      animation-play-state: paused;
+    }
+
+    .ticker-item {
+      display: inline-block;
+      margin-right: 40px;
+      font-size: 0.95rem;
+      color: #facc15;
+      font-weight: 500;
+    }
+
+    .ticker-item a {
+      color: #e2e8f0;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .ticker-item a:hover {
+      color: #60a5fa;
+      text-decoration: underline;
+    }
+
+    .ticker-separator {
+      display: inline-block;
+      margin-right: 30px;
+      color: #3b82f6;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+
+    @keyframes ticker-scroll {
+      0% {
+        transform: translateX(100%);
+      }
+      100% {
+        transform: translateX(-100%);
+      }
+    }
+
+    /* Ajuste para pantallas pequeñas */
+    @media (max-width: 768px) {
+      .ticker {
+        animation-duration: 60s;
+      }
+      .ticker-item {
+        font-size: 0.8rem;
+        margin-right: 25px;
+      }
+    }
+
+    /* ========= RESTO DE TU ESTILO ========= */
+    header {
+      padding: 20px;
+      background: #1e293b;
+      text-align: center;
+      border-bottom: 1px solid #334155;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: #1e293b;
+      padding: 25px;
+      border-radius: 15px;
+      border: 1px solid #334155;
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-bottom: 15px;
+      color: #3b82f6;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .item {
+      background: #334155;
+      padding: 15px;
+      border-radius: 10px;
+      transition: transform 0.2s;
+    }
+
+    .item:hover {
+      transform: translateY(-3px);
+      background: #3e4c5e;
+    }
+
+    .item b {
+      color: #60a5fa;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .item small {
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+
+    .btn-toggle {
+      width: 100%;
+      padding: 12px;
+      background: #334155;
+      color: white;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .btn-toggle:hover {
+      background: #475569;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .analysis-point {
+      border-left: 4px solid #3b82f6;
+      background: #1a202c;
+      padding: 15px;
+      margin-bottom: 12px;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .geo-point {
+      border-left: 4px solid #6366f1;
+      background: #1a202c;
+      padding: 18px;
+      margin-bottom: 15px;
+      border-radius: 0 10px 10px 0;
+    }
+
+    .geo-point h4 {
+      margin: 0 0 8px 0;
+      color: #f8fafc;
+      font-size: 1.1rem;
+    }
+
+    .geo-point p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #cbd5e1;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: white;
+      box-sizing: border-box;
+    }
+
+    .calc-btn {
+      width: 100%;
+      padding: 12px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .calc-btn:hover {
+      background: #1d4ed8;
+    }
+
+    #calc-result {
+      margin-top: 15px;
+      padding: 15px;
+      background: #064e3b;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    /* Indicador de carga del ticker */
+    .ticker-loading {
+      display: inline-block;
+      padding: 12px;
+      color: #94a3b8;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+<div class="ticker-container">
+  <div class="ticker" id="newsTicker">
+    <span class="ticker-loading">🔄 Cargando noticias económicas en tiempo real...</span>
+  </div>
+</div>
+
+<header>EDUCACIÓN FINANCIERA 2026</header>
+
+<div class="container">
+  <div class="card">
+    <div class="section-title">📚 Glosario de Activos y Estrategias</div>
+    <button class="btn-toggle" onclick="toggle('concepts')">Expandir Conceptos</button>
+    <div id="concepts" class="hidden grid">
+      <div class="item"><b>ETFs</b><small>Fondos que cotizan en bolsa, combinando la diversificación de un fondo con la liquidez de una acción.</small></div>
+      <div class="item"><b>Inflación</b><small>Aumento generalizado de precios que reduce el poder adquisitivo del dinero en el tiempo.</small></div>
+      <div class="item"><b>Liquidez</b><small>Facilidad con la que un activo puede convertirse en dinero en efectivo sin perder valor.</small></div>
+      <div class="item"><b>Renta Fija</b><small>Inversiones como bonos donde se conoce de antemano la rentabilidad o el flujo de pagos.</small></div>
+      <div class="item"><b>Renta Variable</b><small>Activos donde la rentabilidad depende del éxito de la entidad (ej. acciones).</small></div>
+      <div class="item"><b>Apalancamiento</b><small>Uso de deuda para financiar una operación con la esperanza de aumentar la rentabilidad.</small></div>
+      <div class="item"><b>Volatilidad</b><small>Medida de la variación de los precios de un activo en un periodo determinado.</small></div>
+      <div class="item"><b>Bear Market</b><small>Mercado bajista caracterizado por una caída sostenida de precios y pesimismo general.</small></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">📉 Análisis Coyuntural 2026</div>
+    <button class="btn-toggle" onclick="toggle('context')">Factores de Política y Mercado</button>
+    <div id="context" class="hidden">
+      <div class="analysis-point">
+        <h4>Política Monetaria Restrictiva</h4>
+        <small>Tasas de interés elevadas para contener la inflación, lo que encarece el consumo y el crédito empresarial.</small>
+      </div>
+      <div class="analysis-point">
+        <h4>Transición Energética</h4>
+        <small>Costos de infraestructura verde que impactan temporalmente en los precios finales de la energía industrial.</small>
+      </div>
+      <div class="analysis-point">
+        <h4>Nearshoring</h4>
+        <small>Relocalización de fábricas a países aliados para asegurar suministros, elevando costos logísticos frente al modelo anterior.</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">🌐 Dinámicas Geopolíticas Globales</div>
+    <button class="btn-toggle" onclick="toggle('geo-impact')">Análisis Detallado de Conflictos</button>
+    <div id="geo-impact" class="hidden">
+      <div class="geo-point">
+        <h4>Canal de Energía y Transporte</h4>
+        <p>La inestabilidad en rutas marítimas críticas (como el Estrecho de Ormuz) genera volatilidad en el precio del petróleo. Esto incrementa los costos de producción y fletes internacionales, trasladando el gasto directamente al consumidor final.</p>
+      </div>
+      <div class="geo-point">
+        <h4>Canal de Alimentos y Materias Primas</h4>
+        <p>Las interrupciones en zonas de alta producción agrícola afectan la exportación de fertilizantes y granos básicos. La escasez relativa de estos insumos presiona al alza los precios de la canasta alimentaria global por mayores costos de cultivo.</p>
+      </div>
+      <div class="geo-point">
+        <h4>Fragmentación en Bloques Económicos</h4>
+        <p>La división del comercio en bloques geopolíticos rompe el concepto de "mercado único". Esta fragmentación obliga a las empresas a duplicar cadenas de suministro en regiones más seguras pero menos eficientes, encareciendo la tecnología y manufactura.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">🧮 Simulador de Proyección</div>
+    <input type="number" id="p" placeholder="Capital Inicial">
+    <input type="number" id="r" placeholder="Interés Anual %">
+    <input type="number" id="t" placeholder="Plazo en Años">
+    <button class="calc-btn" onclick="calc()">Calcular Interés Compuesto</button>
+    <div id="calc-result" class="hidden"></div>
+  </div>
+</div>
+
+<script>
+// ========= FUNCIONES EXISTENTES =========
+function toggle(id) {
+  document.getElementById(id).classList.toggle('hidden');
+}
+
+function calc() {
+  const p = parseFloat(document.getElementById('p').value);
+  const r = parseFloat(document.getElementById('r').value) / 100;
+  const t = parseFloat(document.getElementById('t').value);
+  if (p && r && t) {
+    const res = p * Math.pow((1 + r), t);
+    const div = document.getElementById('calc-result');
+    div.innerHTML = `Resultado proyectado: $${res.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    div.classList.remove('hidden');
+  }
+}
+
+// ========= FUNCIONES DEL TICKER (NOTICIAS EN TIEMPO REAL) =========
+async function cargarNoticiasEconomia() {
+  const tickerElement = document.getElementById('newsTicker');
+  
+  try {
+    const apiKey = 'TU_API_KEY_AQUI'; 
+    const url = `https://newsapi.org/v2/top-headlines?country=us&category=business&apiKey=${apiKey}`;
+    
+    const respuesta = await fetch(url);
+    const datos = await respuesta.json();
+    
+    if (datos.status === 'ok' && datos.articles.length > 0) {
+      let html = '';
+      datos.articles.forEach((articulo, index) => {
+        if (articulo.title && articulo.title !== '[Removed]') {
+          let titulo = articulo.title.length > 100 ? articulo.title.substring(0, 100) + '...' : articulo.title;
+          html += `
+            <span class="ticker-item">
+              📊 <a href="${articulo.url}" target="_blank" rel="noopener noreferrer">${titulo}</a>
+            </span>
+            <span class="ticker-separator">◆</span>
+          `;
+        }
+      });
+      
+      if (html === '') {
+        html = '<span class="ticker-item">📰 No se pudieron cargar noticias en este momento. Reintentando...</span>';
+      }
+      
+      tickerElement.innerHTML = html;
+    } else {
+      throw new Error('No se recibieron noticias');
+    }
+    
+  } catch (error) {
+    console.error('Error cargando noticias:', error);
+    // Mostrar noticias de respaldo basadas en eventos reales recientes
+    tickerElement.innerHTML = `
+      <span class="ticker-item">📈 La Reserva Federal mantiene los tipos de interés en máximos de 20 años</span>
+      <span class="ticker-separator">◆</span>
+      <span class="ticker-item">🏭 La inflación en la Eurozona se modera pero el sector servicios sigue tensionado</span>
+      <span class="ticker-separator">◆</span>
+      <span class="ticker-item">🛢️ OPEP+ mantiene los recortes voluntarios de producción de petróleo</span>
+      <span class="ticker-separator">◆</span>
+      <span class="ticker-item">📊 El Nikkei alcanza niveles récord tras el cambio de política del Banco de Japón</span>
+      <span class="ticker-separator">◆</span>
+      <span class="ticker-item">🏦 El Banco Central Europeo prepara el terreno para posibles recortes de tipos en verano</span>
+    `;
+  }
+}
+
+cargarNoticiasEconomia();
+setInterval(cargarNoticiasEconomia, 300000);
+</script>
+</body>
+</html>
