@@ -57,7 +57,6 @@
       z-index: 1000;
       overflow: hidden;
       white-space: nowrap;
-      /* Efecto de matriz de puntos LED */
       background-image: radial-gradient(circle, #111 1px, transparent 1px);
       background-size: 3px 3px;
     }
@@ -78,7 +77,7 @@
       margin-right: 50px;
       font-family: 'Courier New', Courier, monospace;
       font-size: 1.1rem;
-      color: #ffaa00; /* Color ámbar clásico de LED */
+      color: #ffaa00;
       font-weight: bold;
       text-transform: uppercase;
       text-shadow: 0 0 5px #ffaa00;
@@ -327,11 +326,14 @@
 
   <div class="card">
     <div class="section-title">🧮 Simulador de Proyección</div>
-    <input type="number" id="p" placeholder="Capital Inicial">
-    <input type="number" id="r" placeholder="Interés Anual %">
-    <input type="number" id="t" placeholder="Plazo en Años">
-    <button class="calc-btn" onclick="calc()">Calcular Interés Compuesto</button>
-    <div id="calc-result" class="hidden"></div>
+    <button class="btn-toggle" onclick="toggle('calc-panel')">Abrir Simulador</button>
+    <div id="calc-panel" class="hidden">
+      <input type="number" id="p" placeholder="Capital Inicial">
+      <input type="number" id="r" placeholder="Interés Anual %">
+      <input type="number" id="t" placeholder="Plazo en Años">
+      <button class="calc-btn" onclick="calc()">Calcular Interés Compuesto</button>
+      <div id="calc-result" class="hidden"></div>
+    </div>
   </div>
 
   <div class="ad-placeholder ad-bottom">Futuro anuncio</div>
