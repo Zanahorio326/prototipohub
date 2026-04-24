@@ -42,29 +42,30 @@
 
     .ad-bottom {
       width: 100%;
-      height: 90px; /* Tamaño ajustado para visibilidad óptima */
+      height: 90px;
       margin-top: 20px;
       border-radius: 15px;
     }
 
-    /* ========= ESTILOS DEL TICKER ========= */
+    /* ========= ESTILO LED PARA EL TICKER ========= */
     .ticker-container {
-      background: #0a0f1a;
-      border-bottom: 2px solid #3b82f6;
-      border-top: 2px solid #3b82f6;
+      background: #000; /* Fondo negro puro para resaltar LED */
+      border-bottom: 2px solid #059669;
+      border-top: 2px solid #059669;
       position: sticky;
       top: 90px; 
       z-index: 1000;
       overflow: hidden;
       white-space: nowrap;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
     }
 
     .ticker {
       display: inline-block;
       white-space: nowrap;
       animation: ticker-scroll 40s linear infinite;
-      padding: 12px 0;
+      padding: 10px 0;
+      font-family: 'Courier New', Courier, monospace; /* Estilo pixeleado */
     }
 
     .ticker-container:hover .ticker {
@@ -74,26 +75,22 @@
     .ticker-item {
       display: inline-block;
       margin-right: 40px;
-      font-size: 0.95rem;
-      color: #facc15;
-      font-weight: 500;
+      font-size: 1.1rem;
+      color: #10b981; /* Verde LED */
+      font-weight: bold;
+      text-shadow: 0 0 8px rgba(16, 185, 129, 0.8); /* Efecto resplandor */
+      letter-spacing: 1px;
     }
 
     .ticker-item a {
-      color: #e2e8f0;
+      color: #10b981;
       text-decoration: none;
-      transition: color 0.2s;
-    }
-
-    .ticker-item a:hover {
-      color: #60a5fa;
-      text-decoration: underline;
     }
 
     .ticker-separator {
       display: inline-block;
       margin-right: 30px;
-      color: #3b82f6;
+      color: #065f46;
       font-weight: bold;
       font-size: 1.2rem;
     }
@@ -105,7 +102,6 @@
 
     @media (max-width: 768px) {
       .ticker { animation-duration: 60s; }
-      .ticker-item { font-size: 0.8rem; margin-right: 25px; }
       .ad-top { height: 60px; }
       .ticker-container { top: 60px; }
     }
@@ -206,18 +202,6 @@
       border-radius: 0 10px 10px 0;
     }
 
-    .geo-point h4 {
-      margin: 0 0 8px 0;
-      color: #f8fafc;
-      font-size: 1.1rem;
-    }
-
-    .geo-point p {
-      margin: 0;
-      font-size: 0.9rem;
-      color: #cbd5e1;
-    }
-
     input {
       width: 100%;
       padding: 12px;
@@ -226,7 +210,6 @@
       border: 1px solid #475569;
       background: #0f172a;
       color: white;
-      box-sizing: border-box;
     }
 
     .calc-btn {
@@ -249,13 +232,6 @@
       border-radius: 8px;
       text-align: center;
     }
-
-    .ticker-loading {
-      display: inline-block;
-      padding: 12px;
-      color: #94a3b8;
-      font-style: italic;
-    }
   </style>
 </head>
 <body>
@@ -264,65 +240,43 @@
 
 <div class="ticker-container">
   <div class="ticker" id="newsTicker">
-    <span class="ticker-loading">🔄 Cargando noticias económicas en tiempo real...</span>
+    <span class="ticker-item">🔄 CARGANDO MATRIZ DE DATOS...</span>
   </div>
 </div>
 
-<header>EDUCACIÓN FINANCIERA 2026</header>
+<header>INFORMACIÓN Y EDUCACIÓN FINANCIERA</header>
 
 <div class="container">
   <div class="card">
     <div class="section-title">📚 Glosario de Activos y Estrategias</div>
     <button class="btn-toggle" onclick="toggle('concepts')">Expandir Conceptos</button>
     <div id="concepts" class="hidden grid">
-      <div class="item"><b>ETFs</b><small>Fondos que cotizan en bolsa, combinando la diversificación de un fondo con la liquidez de una acción.</small></div>
-      <div class="item"><b>Inflación</b><small>Aumento generalizado de precios que reduce el poder adquisitivo del dinero en el tiempo.</small></div>
-      <div class="item"><b>Liquidez</b><small>Facilidad con la que un activo puede convertirse en dinero en efectivo sin perder valor.</small></div>
-      <div class="item"><b>Renta Fija</b><small>Inversiones como bonos donde se conoce de antemano la rentabilidad o el flujo de pagos.</small></div>
-      <div class="item"><b>Renta Variable</b><small>Activos donde la rentabilidad depende del éxito de la entidad (ej. acciones).</small></div>
-      <div class="item"><b>Apalancamiento</b><small>Uso de deuda para financiar una operación con la esperanza de aumentar la rentabilidad.</small></div>
-      <div class="item"><b>Volatilidad</b><small>Medida de la variación de los precios de un activo en un periodo determinado.</small></div>
-      <div class="item"><b>Bear Market</b><small>Mercado bajista caracterizado por una caída sostenida de precios y pesimismo general.</small></div>
+      <div class="item"><b>ETFs</b><small>Fondos que cotizan en bolsa.</small></div>
+      <div class="item"><b>Inflación</b><small>Aumento generalizado de precios.</small></div>
+      <div class="item"><b>Liquidez</b><small>Facilidad de conversión a efectivo.</small></div>
+      <div class="item"><b>Renta Fija</b><small>Flujo de pagos predecible.</small></div>
     </div>
   </div>
 
   <div class="card">
     <div class="section-title">📉 Análisis Coyuntural 2026</div>
-    <button class="btn-toggle" onclick="toggle('context')">Factores de Política y Mercado</button>
+    <button class="btn-toggle" onclick="toggle('context')">Factores de Mercado</button>
     <div id="context" class="hidden">
-      <div class="analysis-point">
-        <h4>Política Monetaria Restrictiva</h4>
-        <small>Tasas de interés elevadas para contener la inflación, lo que encarece el consumo y el crédito empresarial.</small>
-      </div>
-      <div class="analysis-point">
-        <h4>Transición Energética</h4>
-        <small>Costos de infraestructura verde que impactan temporalmente en los precios finales de la energía industrial.</small>
-      </div>
-      <div class="analysis-point">
-        <h4>Nearshoring</h4>
-        <small>Relocalización de fábricas a países aliados para asegurar suministros, elevando costos logísticos frente al modelo anterior.</small>
-      </div>
+      <div class="analysis-point"><h4>Política Monetaria</h4><small>Tasas elevadas.</small></div>
+      <div class="analysis-point"><h4>Transición Energética</h4><small>Costos verdes.</small></div>
     </div>
   </div>
 
   <div class="card">
-    <div class="section-title">🌐 Dinámicas Geopolíticas Globales</div>
-    <button class="btn-toggle" onclick="toggle('geo-impact')">Análisis Detallado de Conflictos</button>
+    <div class="section-title">🌐 Dinámicas Geopolíticas</div>
+    <button class="btn-toggle" onclick="toggle('geo-impact')">Conflictos Globales</button>
     <div id="geo-impact" class="hidden">
-      <div class="geo-point">
-        <h4>Canal de Energía y Transporte</h4>
-        <p>La inestabilidad en rutas marítimas críticas genera volatilidad en el precio del petróleo.</p>
-      </div>
-      <div class="geo-point">
-        <h4>Canal de Alimentos y Materias Primas</h4>
-        <p>Las interrupciones en zonas de alta producción agrícola afectan la exportación de fertilizantes.</p>
-      </div>
-      <div class="geo-point">
-        <h4>Fragmentación en Bloques Económicos</h4>
-        <p>La división del comercio en bloques geopolíticos rompe el concepto de "mercado único".</p>
-      </div>
+      <div class="geo-point"><p>Inestabilidad en rutas marítimas críticas.</p></div>
+      <div class="geo-point"><p>Fragmentación en bloques económicos.</p></div>
     </div>
   </div>
+
+  <header>HERRAMIENTAS FINANCIERAS</header>
 
   <div class="card">
     <div class="section-title">🧮 Simulador de Proyección</div>
@@ -364,19 +318,18 @@ async function cargarNoticiasEconomia() {
       let html = '';
       datos.articles.forEach((articulo) => {
         if (articulo.title && articulo.title !== '[Removed]') {
-          let titulo = articulo.title.length > 100 ? articulo.title.substring(0, 100) + '...' : articulo.title;
-          html += `<span class="ticker-item">📊 <a href="${articulo.url}" target="_blank" rel="noopener noreferrer">${titulo}</a></span><span class="ticker-separator">◆</span>`;
+          let titulo = articulo.title.toUpperCase();
+          html += `<span class="ticker-item">● ${titulo}</span><span class="ticker-separator">||</span>`;
         }
       });
-      tickerElement.innerHTML = html || '<span class="ticker-item">📰 No se pudieron cargar noticias.</span>';
+      tickerElement.innerHTML = html;
     } else { throw new Error(); }
   } catch (error) {
     tickerElement.innerHTML = `
-      <span class="ticker-item">📈 La Reserva Federal mantiene los tipos de interés en máximos de 20 años</span>
-      <span class="ticker-separator">◆</span>
-      <span class="ticker-item">🏭 La inflación en la Eurozona se modera</span>
-      <span class="ticker-separator">◆</span>
-      <span class="ticker-item">🛢️ OPEP+ mantiene los recortes de producción</span>
+      <span class="ticker-item">● FED MANTIENE TASAS EN MÁXIMOS</span><span class="ticker-separator">||</span>
+      <span class="ticker-item">● INFLACIÓN EUROZONA SE MODERA</span><span class="ticker-separator">||</span>
+      <span class="ticker-item">● OPEP+ MANTIENE RECORTES DE CRUDO</span><span class="ticker-separator">||</span>
+      <span class="ticker-item">● NIKKEI ALCANZA NIVELES RÉCORD</span>
     `;
   }
 }
