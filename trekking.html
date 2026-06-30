@@ -169,7 +169,6 @@ footer {
         <div class="dato"><strong>Hora de salida:</strong> 09:15</div>
         <div class="dato"><strong>Hora de llegada al inicio del trekking:</strong> 12:30</div>
         <div class="dato"><strong>Hora de inicio del ascenso:</strong> 13:50</div>
-        <div class="dato"><strong>Número de participantes:</strong> 10</div>
     </div>
 </section>
 
@@ -188,6 +187,17 @@ footer {
             <h3>Etapa 3 - Subida</h3>
             <p>Ascenso principal hasta la cumbre.</p>
         </div>
+    </div>
+</section>
+
+<section class="collapsible">
+    <button class="collapsible-trigger">Participantes</button>
+    <div class="collapsible-content">
+        <div class="dato"><strong>Número de participantes:</strong> 10</div>
+        <div class="dato" style="margin-top: 15px;"><strong>Integrantes:</strong></div>
+        <ul>
+            <li>Kevin González</li>
+            </ul>
     </div>
 </section>
 
@@ -228,7 +238,18 @@ themeToggle.addEventListener('click', () => {
 const triggers = document.querySelectorAll('.collapsible-trigger');
 triggers.forEach(trigger => {
     trigger.addEventListener('click', () => {
-        trigger.parentElement.classList.toggle('active');
+        const parent = trigger.parentElement;
+        const isOpen = parent.classList.contains('active');
+        
+        // Cerrar todas las secciones abiertas
+        document.querySelectorAll('.collapsible').forEach(section => {
+            section.classList.remove('active');
+        });
+
+        // Si la sección no estaba abierta, abrirla
+        if (!isOpen) {
+            parent.classList.add('active');
+        }
     });
 });
 </script>
