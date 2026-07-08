@@ -54,7 +54,7 @@ footer { text-align: center; padding: 20px; color: var(--text-muted); }
 .arcade-container { text-align: center; background: #121226; padding: 25px; border: 4px solid #ff0055; box-shadow: 0 0 20px rgba(255, 0, 85, 0.5); border-radius: 8px; width: 320px; }
 .username-display { font-size: 26px; color: #00ff55; text-shadow: 0 0 8px rgba(0, 255, 85, 0.7); font-weight: bold; margin-bottom: 20px; letter-spacing: 2px; }
 .carousel-view { width: 256px; height: 288px; margin: 0 auto; overflow: hidden; position: relative; border: 2px solid #00ffff; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3); background: #1a1a3a; }
-.carousel-track { display: flex; width: 2560px; height: 100%; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+.carousel-track { display: flex; width: 3584px; height: 100%; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
 canvas { image-rendering: pixelated; width: 256px; height: 288px; flex-shrink: 0; }
 .controls { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; margin-bottom: 20px; }
 .btn-nav { background: #ff0055; border: 2px solid #fff; color: #fff; padding: 8px 16px; cursor: pointer; font-family: inherit; font-weight: bold; font-size: 16px; box-shadow: 0 4px 0 #990033; }
@@ -112,6 +112,10 @@ canvas { image-rendering: pixelated; width: 256px; height: 288px; flex-shrink: 0
                         <canvas id="charCanvas8" width="128" height="144"></canvas>
                         <canvas id="charCanvas9" width="128" height="144"></canvas>
                         <canvas id="charCanvas10" width="128" height="144"></canvas>
+                        <canvas id="charCanvas11" width="128" height="144"></canvas>
+                        <canvas id="charCanvas12" width="128" height="144"></canvas>
+                        <canvas id="charCanvas13" width="128" height="144"></canvas>
+                        <canvas id="charCanvas14" width="128" height="144"></canvas>
                     </div>
                 </div>
                 <div class="controls">
@@ -167,9 +171,12 @@ const characters = [
     { username: "Kevin", url: "https://www.instagram.com/kev_in_duccion?igsh=MXUyaHNxb3pybXh4cw==" },
     { username: "Amaro", url: "https://www.instagram.com/ahwro_?igsh=ODFzb2NkbjVvNWM4" },
     { username: "Alonso", url: "https://www.instagram.com/antr.opofag0?igsh=cGVlMHVpOThsejc5" },
-    { username: "Jugador 4", url: "#" }, { username: "Jugador 5", url: "#" }, { username: "Jugador 6", url: "#" },
+    { username: "Joaquín", url: "https://www.instagram.com/jignaxioooo?igsh=ZGgwa3p6ZGpsbmxh" },
+    { username: "Matías", url: "https://www.instagram.com/matias__silva17?igsh=ajMyNHplbWQ0eHZz" },
+    { username: "Miguel", url: "https://www.instagram.com/wandoooo0o?igsh=NjhydjBpYjNxYnVt" },
     { username: "Jugador 7", url: "#" }, { username: "Jugador 8", url: "#" }, { username: "Jugador 9", url: "#" },
-    { username: "Jugador 10", url: "#" }
+    { username: "Jugador 10", url: "#" }, { username: "Jugador 11", url: "#" }, { username: "Jugador 12", url: "#" },
+    { username: "Jugador 13", url: "#" }, { username: "Jugador 14", url: "#" }
 ];
 let currentIndex = 0;
 function moveCarousel(direction) {
@@ -181,6 +188,8 @@ function moveCarousel(direction) {
 }
 
 const skinTone1 = '#f7cf9e', shadowTone1 = '#dca773', blushTone1 = '#c57575', underEyeTone1 = '#e5be93';
+const skinTone2 = '#eab985', shadowTone2 = '#cd945f', blushTone2 = '#b96666';
+
 function drawCharacter1() {
     const canvas = document.getElementById('charCanvas1'); const ctx = canvas.getContext('2d');
     ctx.fillStyle = skinTone1; ctx.fillRect(54, 14, 20, 20); ctx.fillRect(56, 34, 16, 2); ctx.fillRect(61, 36, 6, 4);
@@ -201,7 +210,6 @@ function drawCharacter1() {
 function drawCharacter2() {
     const canvas = document.getElementById('charCanvas2'); const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#111111'; ctx.fillRect(50, 32, 28, 12);
-    const skinTone2 = '#eab985', shadowTone2 = '#cd945f', blushTone2 = '#b96666';
     ctx.fillStyle = skinTone2; ctx.fillRect(54, 14, 20, 20); ctx.fillRect(56, 34, 16, 2); ctx.fillRect(61, 36, 6, 4);
     ctx.fillStyle = shadowTone2; ctx.fillRect(63, 25, 4, 2); ctx.fillStyle = blushTone2; ctx.fillRect(61, 30, 6, 2);
     ctx.fillStyle = '#111111'; ctx.fillRect(54, 10, 20, 6); ctx.fillRect(52, 14, 2, 6); ctx.fillRect(74, 14, 2, 6);
@@ -226,14 +234,50 @@ function drawCharacter3() {
     ctx.fillStyle = '#1a2f63'; ctx.fillRect(52, 80, 24, 6); ctx.fillRect(53, 86, 9, 36); ctx.fillRect(66, 86, 9, 36);
     ctx.fillStyle = '#7f8c8d'; ctx.fillRect(50, 122, 12, 4); ctx.fillRect(66, 122, 12, 4); ctx.fillRect(50, 126, 12, 2); ctx.fillRect(66, 126, 12, 2);
 }
+function drawCharacter4() {
+    const canvas = document.getElementById('charCanvas4'); const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#111111'; ctx.fillRect(50, 32, 28, 12); ctx.fillRect(54, 10, 20, 6); ctx.fillRect(52, 14, 2, 6); ctx.fillRect(74, 14, 2, 6);
+    const skinToneMoreno = '#8d5524'; const shadowToneMoreno = '#663300'; const blushToneMoreno = '#aa3333';
+    ctx.fillStyle = skinToneMoreno; ctx.fillRect(54, 14, 20, 20); ctx.fillRect(56, 34, 16, 2); ctx.fillRect(61, 36, 6, 4);
+    ctx.fillStyle = shadowToneMoreno; ctx.fillRect(63, 25, 4, 2); ctx.fillStyle = blushToneMoreno; ctx.fillRect(61, 30, 6, 2);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(57, 20, 4, 3); ctx.fillRect(67, 20, 4, 3); ctx.fillStyle = '#000000'; ctx.fillRect(59, 20, 2, 3); ctx.fillRect(69, 20, 2, 3);
+    ctx.fillStyle = '#222222'; ctx.fillRect(48, 40, 32, 40); ctx.fillRect(36, 40, 12, 30); ctx.fillRect(80, 40, 12, 30);
+    ctx.fillStyle = '#555555'; ctx.fillRect(63, 40, 2, 40); ctx.fillStyle = skinToneMoreno; ctx.fillRect(37, 70, 10, 6); ctx.fillRect(81, 70, 10, 6);
+    ctx.fillStyle = '#000033'; ctx.fillRect(48, 80, 32, 20); ctx.fillStyle = skinToneMoreno; ctx.fillRect(50, 100, 10, 22); ctx.fillRect(68, 100, 10, 22);
+    ctx.fillStyle = '#111111'; ctx.fillRect(47, 122, 12, 4); ctx.fillRect(69, 122, 12, 4); ctx.fillStyle = '#7f8c8d'; ctx.fillRect(47, 126, 12, 2); ctx.fillRect(69, 126, 12, 2);
+}
+function drawCharacter5() {
+    const canvas = document.getElementById('charCanvas5'); const ctx = canvas.getContext('2d');
+    ctx.fillStyle = skinTone1; ctx.fillRect(54, 20, 20, 20); ctx.fillRect(56, 40, 16, 2); ctx.fillRect(61, 42, 6, 4);
+    ctx.fillStyle = shadowTone1; ctx.fillRect(63, 31, 5, 3); ctx.fillStyle = blushTone1; ctx.fillRect(61, 36, 6, 2);
+    ctx.fillStyle = '#705040'; ctx.fillRect(53, 16, 22, 8); ctx.fillRect(51, 22, 3, 6); ctx.fillRect(73, 22, 3, 6);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(57, 26, 4, 3); ctx.fillRect(67, 26, 4, 3); ctx.fillStyle = '#000000'; ctx.fillRect(59, 26, 2, 3); ctx.fillRect(69, 26, 2, 3);
+    ctx.fillStyle = '#888888'; ctx.fillRect(52, 46, 24, 40); ctx.fillRect(44, 46, 8, 6); ctx.fillRect(76, 46, 8, 6);
+    ctx.fillStyle = skinTone1; ctx.fillRect(44, 52, 8, 28); ctx.fillRect(76, 52, 8, 28); ctx.fillRect(44, 80, 8, 6); ctx.fillRect(76, 80, 8, 6);
+    ctx.fillStyle = '#2a4f93'; ctx.fillRect(52, 86, 24, 6); ctx.fillRect(53, 92, 9, 36); ctx.fillRect(66, 92, 9, 36);
+    ctx.fillStyle = '#7f8c8d'; ctx.fillRect(50, 128, 12, 4); ctx.fillRect(66, 128, 12, 4); ctx.fillStyle = '#ffffff'; ctx.fillRect(50, 132, 12, 2); ctx.fillRect(66, 132, 12, 2);
+}
+function drawCharacter6() {
+    const canvas = document.getElementById('charCanvas6'); const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#111111'; ctx.fillRect(50, 36, 28, 12); ctx.fillRect(54, 14, 20, 6); ctx.fillRect(52, 18, 2, 6); ctx.fillRect(74, 18, 2, 6);
+    ctx.fillStyle = skinTone2; ctx.fillRect(54, 18, 20, 20); ctx.fillRect(56, 38, 16, 2); ctx.fillRect(61, 40, 6, 4);
+    ctx.fillStyle = shadowTone2; ctx.fillRect(63, 29, 4, 2); ctx.fillStyle = blushTone2; ctx.fillRect(61, 34, 6, 2);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(57, 24, 4, 3); ctx.fillRect(67, 24, 4, 3); ctx.fillStyle = '#000000'; ctx.fillRect(59, 24, 2, 3); ctx.fillRect(69, 24, 2, 3);
+    ctx.fillStyle = '#222222'; ctx.fillRect(45, 44, 38, 10); ctx.fillRect(43, 54, 42, 28);
+    ctx.fillStyle = '#0055ff'; ctx.fillRect(58, 44, 12, 38); ctx.fillStyle = '#222222'; ctx.fillRect(58, 44, 2, 38); ctx.fillRect(68, 44, 2, 38);
+    ctx.fillStyle = '#333333'; ctx.fillRect(58, 44, 1, 38); ctx.fillStyle = '#555555'; ctx.fillRect(69, 44, 1, 38);
+    ctx.fillStyle = '#ebb98f'; ctx.fillRect(41, 44, 4, 10); ctx.fillRect(83, 44, 4, 10); ctx.fillRect(41, 54, 4, 8); ctx.fillRect(39, 62, 4, 8); ctx.fillRect(37, 70, 4, 8); ctx.fillRect(83, 54, 4, 8); ctx.fillRect(85, 62, 4, 8); ctx.fillRect(87, 70, 4, 8);
+    ctx.fillStyle = skinTone2; ctx.fillRect(37, 78, 8, 6); ctx.fillRect(83, 78, 8, 6); ctx.fillStyle = '#1a2f63'; ctx.fillRect(45, 82, 38, 6); ctx.fillRect(46, 88, 12, 30); ctx.fillRect(70, 88, 12, 30);
+    ctx.fillStyle = '#111111'; ctx.fillRect(44, 118, 15, 4); ctx.fillRect(69, 118, 15, 4); ctx.fillStyle = '#7f8c8d'; ctx.fillRect(44, 122, 15, 2); ctx.fillRect(69, 122, 15, 2);
+}
 function drawPlaceholder(id, label) {
     const canvas = document.getElementById(id); const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#555522'; ctx.fillRect(52, 26, 24, 24); ctx.fillRect(48, 54, 32, 50);
     ctx.fillStyle = '#ffffff'; ctx.font = '14px monospace'; ctx.fillText(label, 56, 82);
 }
 window.onload = () => { 
-    drawCharacter1(); drawCharacter2(); drawCharacter3();
-    for(let i=4; i<=10; i++) drawPlaceholder('charCanvas'+i, 'P'+i);
+    drawCharacter1(); drawCharacter2(); drawCharacter3(); drawCharacter4(); drawCharacter5(); drawCharacter6();
+    for(let i=7; i<=14; i++) drawPlaceholder('charCanvas'+i, 'P'+i);
 };
 </script>
 
