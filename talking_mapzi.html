@@ -1,0 +1,1863 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talking Face Studio - Anima cualquier imagen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Paleta propia: zanahoria (naranja), hoja (verde), trigo, musgo y tierra oscura (fondos)
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        soil: { 50: '#f3f6f1', 100: '#e6ece3', 200: '#cdd8ca', 300: '#a9b9a6', 400: '#7f927e', 500: '#586b59', 600: '#3d4e3f', 700: '#2a382c', 800: '#1d281f', 900: '#141c15', 950: '#0d130e' },
+                        carrot: { 50: '#fdf4ec', 100: '#fae3d0', 200: '#f4c8a2', 300: '#ebab79', 400: '#df8d52', 500: '#cf7634', 600: '#b4602a', 700: '#924b25', 800: '#703b21', 900: '#5a321f', 950: '#301910' },
+                        leaf: { 50: '#f1f6ec', 100: '#e0ebd5', 200: '#c4d9b0', 300: '#a6c488', 400: '#88ab67', 500: '#6c9050', 600: '#55723f', 700: '#435a34', 800: '#37492d', 900: '#2f3d27', 950: '#171f13' },
+                        wheat: { 50: '#fbf6e8', 100: '#f5ead0', 200: '#ecd7a6', 300: '#e0c07d', 400: '#d1a95a', 500: '#bb9042', 600: '#9a7634', 700: '#765a2c', 800: '#5a4526', 900: '#473823', 950: '#261d12' },
+                        moss: { 50: '#f6f7ec', 100: '#eaeed4', 200: '#d4dcaa', 300: '#bcc884', 400: '#a2b162', 500: '#8a9a4b', 600: '#6e7b3b', 700: '#565f31', 800: '#444c2b', 900: '#393f27', 950: '#1d2112' }
+                    }
+                }
+            }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0d130e;
+            color: #f3f6f1;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Patrón de tablero de ajedrez sutil para el fondo del canvas */
+        .canvas-bg {
+            background-color: #18221a;
+            background-image: 
+                linear-gradient(45deg, #111912 25%, transparent 25%), 
+                linear-gradient(-45deg, #111912 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #111912 75%), 
+                linear-gradient(-45deg, transparent 75%, #111912 75%);
+            background-size: 24px 24px;
+            background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+        }
+
+        /* Animación de partículas flotantes */
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(0.8) rotate(-5deg); }
+            50% { transform: translateY(-45px) scale(1.15) rotate(5deg); }
+            100% { opacity: 0; transform: translateY(-95px) scale(1.3) rotate(-5deg); }
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            animation: floatUp 1.3s ease-out forwards;
+            font-size: 2rem;
+            z-index: 40;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.45));
+        }
+
+        /* Vibración para cosquillas */
+        @keyframes shakeHard {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            20% { transform: translate(-6px, 2px) rotate(-1.5deg); }
+            40% { transform: translate(6px, -2px) rotate(1.5deg); }
+            60% { transform: translate(-5px, -1px) rotate(-1deg); }
+            80% { transform: translate(5px, 1px) rotate(1deg); }
+        }
+
+        .canvas-shake {
+            animation: shakeHard 0.25s infinite;
+        }
+
+        /* Pulso de grabación */
+        @keyframes micPulse {
+            0% { box-shadow: 0 0 0 0 rgba(207, 118, 52, 0.75); }
+            70% { box-shadow: 0 0 0 16px rgba(207, 118, 52, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(207, 118, 52, 0); }
+        }
+
+        .recording-active {
+            animation: micPulse 1.2s infinite;
+        }
+
+        /* Animaciones del menú desplegable del engranaje */
+        .gear-popover {
+            transform-origin: bottom left;
+            transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.22s;
+        }
+
+        .gear-popover.closed {
+            opacity: 0;
+            transform: scale(0.88) translateY(10px);
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .gear-popover.open {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        /* Menú de tono (zanahoria) - origen abajo a la derecha */
+        .pitch-popover {
+            transform-origin: bottom right;
+            transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.22s;
+        }
+
+        .pitch-popover.closed {
+            opacity: 0;
+            transform: scale(0.88) translateY(10px);
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .pitch-popover.open {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        /* Menú de voz (🗣️) - se abre hacia la izquierda del botón */
+        .voice-popover {
+            transform-origin: bottom right;
+            transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.22s;
+        }
+
+        .voice-popover.closed {
+            opacity: 0;
+            transform: scale(0.9) translateX(10px);
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .voice-popover.open {
+            opacity: 1;
+            transform: scale(1) translateX(0);
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        /* Menú de acciones (🫶) - se despliega hacia arriba desde el panel inferior */
+        .actions-popover {
+            transform-origin: bottom center;
+            transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.22s;
+        }
+
+        .actions-popover.closed {
+            opacity: 0;
+            transform: scale(0.92) translateY(10px);
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .actions-popover.open {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        /* Rotación suave del icono de engranaje */
+        .gear-icon {
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .gear-btn-active .gear-icon {
+            transform: rotate(90deg);
+        }
+
+        /* Scrollbar sutil dentro del menú del engranaje */
+        .custom-scroll::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: rgba(20, 28, 21, 0.4);
+            border-radius: 9999px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: rgba(127, 146, 126, 0.35);
+            border-radius: 9999px;
+        }
+
+        /* Botones flotantes sobre la imagen: reaparecen gradualmente y desaparecen al instante mientras el personaje repite la voz */
+        #btn-gear-toggle, #btn-pitch-toggle, #btn-voice-toggle {
+            transition: opacity 0.7s ease, transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+        }
+        #btn-gear-toggle.voice-hidden, #btn-pitch-toggle.voice-hidden, #btn-voice-toggle.voice-hidden {
+            opacity: 0;
+            pointer-events: none;
+            transition: none;
+        }
+
+        /* Barra de acciones: el texto se intercambia con el emoji mientras se realiza la acción */
+        .action-label, .action-emoji {
+            transition: opacity 0.15s ease;
+        }
+        .action-emoji {
+            opacity: 0;
+        }
+        .action-btn.action-active .action-label {
+            opacity: 0;
+        }
+        .action-btn.action-active .action-emoji {
+            opacity: 1;
+        }
+
+        /* Estilo personalizado para inputs color */
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            padding: 0;
+            background: none;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: 2px solid rgba(255,255,255,0.25);
+            border-radius: 0.45rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-3 sm:p-5 bg-soil-950 text-soil-100">
+
+    <!-- Contenedor Principal Centrado y Limpio -->
+    <main class="w-full max-w-[500px] flex flex-col items-center gap-3.5">
+
+        <!-- ESCENARIO DE LA IMAGEN (Canvas Principal + Engranaje Flotante Inferior Izquierdo) -->
+        <div id="canvas-container" class="relative w-full aspect-[4/5] rounded-3xl overflow-hidden border-2 border-soil-800/90 shadow-2xl canvas-bg flex items-center justify-center">
+            <canvas id="face-canvas" class="w-full h-full block touch-none cursor-pointer"></canvas>
+
+            <!-- MENÚ DESPLEGABLE ENCAPSULADO EN EL ENGRANAJE (Anclado abajo a la izquierda sobre la imagen) -->
+            <div id="gear-menu" class="gear-popover closed absolute bottom-16 left-3 z-30 w-[calc(100%-1.5rem)] max-w-[330px] max-h-[calc(100%-5rem)] overflow-y-auto custom-scroll rounded-2xl bg-soil-900/95 backdrop-blur-xl border border-soil-700/80 shadow-2xl p-3.5 flex flex-col gap-3">
+                
+                <!-- Cabecera del Menú -->
+                <div class="flex items-center justify-between border-b border-soil-800 pb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">🎭</span>
+                        <span class="text-xs font-extrabold tracking-wide uppercase text-soil-200">Ajustes e Imagen</span>
+                    </div>
+                    <button id="btn-close-gear" class="w-6 h-6 rounded-lg bg-soil-800 hover:bg-soil-700 text-soil-400 hover:text-white flex items-center justify-center text-xs transition" title="Cerrar menú">
+                        ✕
+                    </button>
+                </div>
+
+                <!-- Acciones Principales: Subir Imagen y Modo Jugar/Editar -->
+                <div class="grid grid-cols-1 gap-2">
+                    <label class="cursor-pointer bg-soil-800 hover:bg-soil-700 text-soil-100 text-xs font-bold py-2.5 px-3 rounded-xl border border-soil-700 transition flex items-center justify-center gap-1.5 text-center">
+                        <span>📁 Subir Foto</span>
+                        <input type="file" id="image-upload" accept="image/png, image/jpeg, image/webp" class="hidden">
+                    </label>
+
+                    <!-- Botón Destacado Alternar Modo Jugar / Editar -->
+                    <button id="btn-toggle-mode" class="bg-gradient-to-r from-carrot-600 to-carrot-700 hover:from-carrot-500 hover:to-carrot-600 text-white font-extrabold text-xs py-2.5 px-3 rounded-xl shadow-lg shadow-carrot-500/25 transition transform active:scale-95 flex items-center justify-center gap-2">
+                        <span id="mode-icon">✏️</span>
+                        <span id="mode-label"></span>
+                    </button>
+                </div>
+
+                <!-- SECCIÓN DE CALIBRACIÓN (Visible cuando está en Modo Edición) -->
+                <div id="edit-tools-section" class="hidden flex-col gap-2.5 pt-2 border-t border-soil-800">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-carrot-300">1. Marca sobre la imagen:</span>
+                        <button id="btn-reset-zones" class="text-[11px] text-soil-400 hover:text-carrot-400 underline">
+                            Limpiar
+                        </button>
+                    </div>
+
+                    <!-- Selector compacto de herramienta -->
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <button data-tool="mouth" class="tool-btn flex flex-col items-center justify-center p-2 rounded-xl border-2 border-carrot-500 bg-carrot-500/15 text-center transition">
+                            <span class="text-base">👄</span>
+                            <span class="text-[11px] font-bold text-white mt-0.5">Boca</span>
+                            <span id="check-mouth" class="text-[9px] font-bold text-carrot-300">Activa</span>
+                        </button>
+
+                        <button data-tool="leftEye" class="tool-btn flex flex-col items-center justify-center p-2 rounded-xl border-2 border-soil-800 bg-soil-800/60 hover:border-leaf-500/50 text-center transition">
+                            <span class="text-base">👁️</span>
+                            <span class="text-[11px] font-bold text-white mt-0.5">Ojo Izq.</span>
+                            <span id="check-leftEye" class="text-[9px] font-semibold text-soil-400">Listo</span>
+                        </button>
+
+                        <button data-tool="rightEye" class="tool-btn flex flex-col items-center justify-center p-2 rounded-xl border-2 border-soil-800 bg-soil-800/60 hover:border-wheat-500/50 text-center transition">
+                            <span class="text-base">👁️</span>
+                            <span class="text-[11px] font-bold text-white mt-0.5">Ojo Der.</span>
+                            <span id="check-rightEye" class="text-[9px] font-semibold text-soil-400">Listo</span>
+                        </button>
+                    </div>
+
+                    <!-- Ajustes de Color y Suavizado -->
+                    <div class="bg-soil-950/70 rounded-xl p-2.5 border border-soil-800/80 flex flex-col gap-2 text-xs">
+                        <div class="flex items-center justify-between">
+                            <label for="mouth-color" class="text-soil-300">Interior boca:</label>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="setMouthPreset('#2a080d')" class="w-5 h-5 rounded-full bg-[#2a080d] border border-soil-600" title="Oscuro"></button>
+                                <button type="button" onclick="setMouthPreset('#58111a')" class="w-5 h-5 rounded-full bg-[#58111a] border border-soil-600" title="Rojo"></button>
+                                <input type="color" id="mouth-color" value="#2a080d" class="w-6 h-6 cursor-pointer">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <label for="left-eye-color" class="text-soil-300">Párpado izq.:</label>
+                            <div class="flex items-center gap-1.5">
+                                <button id="btn-resample-left" class="text-[10px] bg-soil-800 hover:bg-soil-700 px-1.5 py-0.5 rounded text-leaf-300 border border-soil-700" title="Detectar color de piel">💉 Auto</button>
+                                <input type="color" id="left-eye-color" value="#d4a373" class="w-6 h-6 cursor-pointer">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <label for="right-eye-color" class="text-soil-300">Párpado der.:</label>
+                            <div class="flex items-center gap-1.5">
+                                <button id="btn-resample-right" class="text-[10px] bg-soil-800 hover:bg-soil-700 px-1.5 py-0.5 rounded text-wheat-300 border border-soil-700" title="Detectar color de piel">💉 Auto</button>
+                                <input type="color" id="right-eye-color" value="#d4a373" class="w-6 h-6 cursor-pointer">
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-1 pt-0.5">
+                            <div class="flex justify-between text-[11px] text-soil-300">
+                                <span>Suavizado boca:</span>
+                                <span id="feather-val" class="font-bold text-carrot-400">6 px</span>
+                            </div>
+                            <input type="range" id="feather-range" min="0" max="18" value="6" class="w-full h-1.5 accent-carrot-500 cursor-pointer">
+                        </div>
+                    </div>
+
+                    <button id="btn-start-play" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-leaf-400 to-leaf-500 hover:from-leaf-300 hover:to-leaf-400 text-soil-950 font-extrabold text-xs shadow-lg shadow-leaf-500/20 transition">
+                        ▶️ Jugar
+                    </button>
+                </div>
+            </div>
+
+            <!-- BOTÓN FLOTANTE DE ENGRANAJE (Esquina Inferior Izquierda de la Imagen) -->
+            <button id="btn-gear-toggle" aria-label="Abrir menú de configuración" title="Subir imagen, editar zonas o jugar" class="absolute bottom-3 left-3 z-30 w-11 h-11 rounded-2xl bg-soil-900/90 hover:bg-soil-800 text-soil-100 border border-soil-700/90 shadow-xl backdrop-blur-md flex items-center justify-center transition transform active:scale-90">
+                <svg class="gear-icon w-6 h-6 text-soil-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+
+            <!-- BOTÓN FLOTANTE DE TONO / ZANAHORIA (Encima del micrófono) -->
+            <button id="btn-pitch-toggle" aria-label="Elegir tono de voz" title="Tono de voz" class="absolute bottom-16 right-3 z-30 w-11 h-11 rounded-2xl bg-soil-900/90 hover:bg-soil-800 text-soil-100 border border-soil-700/90 shadow-xl backdrop-blur-md flex items-center justify-center transition transform active:scale-90 text-xl">
+                <span id="pitch-icon">🥕</span>
+            </button>
+
+            <!-- MENÚ DESPLEGABLE DE TONOS (Anclado a la zanahoria) -->
+            <div id="pitch-menu" class="pitch-popover closed absolute bottom-[7.25rem] right-3 z-30 flex flex-col gap-1.5 p-2 rounded-2xl bg-soil-900/95 backdrop-blur-xl border border-soil-700/80 shadow-2xl">
+                <button data-pitch="1.45" class="pitch-btn flex items-center gap-2 px-3 py-2 rounded-xl bg-carrot-600 text-white text-xs font-bold transition whitespace-nowrap" title="Voz Ardilla">
+                    <span>🐿️</span>
+                </button>
+                <button data-pitch="1.25" class="pitch-btn flex items-center gap-2 px-3 py-2 rounded-xl bg-transparent text-soil-300 hover:bg-soil-800 hover:text-white text-xs font-semibold transition whitespace-nowrap" title="Voz Aguda">
+                    <span>🐱</span>
+                </button>
+                <button data-pitch="0.80" class="pitch-btn flex items-center gap-2 px-3 py-2 rounded-xl bg-transparent text-soil-300 hover:bg-soil-800 hover:text-white text-xs font-semibold transition whitespace-nowrap" title="Voz Grave">
+                    <span>🐻</span>
+                </button>
+            </div>
+
+            <!-- MENÚ DESPLEGABLE DE VOZ (anclado al 🗣️, se abre hacia la izquierda): micrófono y repetir lo último -->
+            <div id="voice-menu" class="voice-popover closed absolute bottom-3 right-[3.75rem] z-30 flex gap-2 p-2 rounded-2xl bg-soil-900/95 backdrop-blur-xl border border-soil-700/80 shadow-2xl">
+                <button id="btn-mic" aria-label="Tocar para hablar" title="Tocar para hablar" class="w-11 h-11 rounded-2xl bg-gradient-to-br from-carrot-600 to-carrot-700 hover:from-carrot-500 hover:to-carrot-600 text-white border border-carrot-400/40 shadow-lg shadow-carrot-500/20 flex items-center justify-center transition transform active:scale-90 text-xl">
+                    <span id="mic-icon">🎙️</span>
+                </button>
+
+                <button id="btn-voice-replay" disabled aria-label="Repetir lo último" title="Repetir lo último" class="w-11 h-11 rounded-2xl bg-leaf-500/15 hover:bg-leaf-500/25 border border-leaf-500/30 text-leaf-200 flex items-center justify-center transition transform active:scale-90 text-xl disabled:opacity-40 disabled:pointer-events-none">
+                    🔁
+                </button>
+            </div>
+
+            <!-- BOTÓN FLOTANTE DE VOZ (Esquina Inferior Derecha de la Imagen) -->
+            <button id="btn-voice-toggle" aria-label="Voz" title="Voz" class="absolute bottom-3 right-3 z-30 w-11 h-11 rounded-2xl bg-gradient-to-br from-carrot-600 to-carrot-700 hover:from-carrot-500 hover:to-carrot-600 text-white border border-carrot-400/40 shadow-xl shadow-carrot-500/20 backdrop-blur-md flex items-center justify-center transition transform active:scale-90 text-xl">
+                <span id="voice-icon">🗣️</span>
+            </button>
+        </div>
+
+        <!-- CONTROLES DE JUEGO INFERIORES COMPACTOS Y ORDENADOS -->
+        <section id="play-controls-bar" class="relative w-full bg-soil-900/90 border border-soil-800/90 rounded-3xl p-2.5 shadow-xl flex flex-col gap-2">
+            
+            <!-- MENÚ DESPLEGABLE DE ACCIONES (anclado al botón 🫶): texto; el emoji aparece solo mientras se realiza la acción -->
+            <div id="actions-menu" class="actions-popover closed absolute bottom-full left-0 right-0 mb-2 z-50 grid grid-cols-4 gap-2 p-2.5 rounded-2xl bg-soil-900/95 backdrop-blur-xl border border-soil-700/80 shadow-2xl">
+                <button id="btn-act-pet" title="Acariciar" aria-label="Acariciar" class="action-btn relative py-2.5 rounded-2xl bg-carrot-500/15 hover:bg-carrot-500/25 border border-carrot-500/30 text-carrot-200 flex items-center justify-center transition active:scale-95 text-xl">
+                    <span class="action-label text-xs font-bold leading-7">Acariciar</span>
+                    <span class="action-emoji absolute inset-0 flex items-center justify-center" aria-hidden="true">🤚</span>
+                </button>
+
+                <button id="btn-act-tickle" title="Cosquillas" aria-label="Cosquillas" class="action-btn relative py-2.5 rounded-2xl bg-leaf-500/15 hover:bg-leaf-500/25 border border-leaf-500/30 text-leaf-200 flex items-center justify-center transition active:scale-95 text-xl">
+                    <span class="action-label text-xs font-bold leading-7">Cosquillas</span>
+                    <span class="action-emoji absolute inset-0 flex items-center justify-center" aria-hidden="true">🪶</span>
+                </button>
+
+                <button id="btn-act-feed" title="Comer" aria-label="Comer" class="action-btn relative py-2.5 rounded-2xl bg-wheat-500/15 hover:bg-wheat-500/25 border border-wheat-500/30 text-wheat-200 flex items-center justify-center transition active:scale-95 text-xl">
+                    <span class="action-label text-xs font-bold leading-7">Comer</span>
+                    <span class="action-emoji absolute inset-0 flex items-center justify-center" aria-hidden="true">🍕</span>
+                </button>
+
+                <button id="btn-act-poke" title="Tocar" aria-label="Tocar" class="action-btn relative py-2.5 rounded-2xl bg-moss-500/15 hover:bg-moss-500/25 border border-moss-500/30 text-moss-200 flex items-center justify-center transition active:scale-95 text-xl">
+                    <span class="action-label text-xs font-bold leading-7">Tocar</span>
+                    <span class="action-emoji absolute inset-0 flex items-center justify-center" aria-hidden="true">👆</span>
+                </button>
+            </div>
+
+            <!-- MENÚ DESPLEGABLE DE AUDIO (anclado al botón 🎵): subir un archivo o repetir el último subido -->
+            <div id="audio-menu" class="actions-popover closed absolute bottom-full left-0 right-0 mb-2 z-50 grid grid-cols-2 gap-2 p-2.5 rounded-2xl bg-soil-900/95 backdrop-blur-xl border border-soil-700/80 shadow-2xl">
+                <button id="btn-audio-pick" title="Subir un archivo de audio" aria-label="Subir audio" class="py-2.5 px-2 rounded-2xl bg-leaf-500/15 hover:bg-leaf-500/25 border border-leaf-500/30 text-leaf-200 flex items-center justify-center transition active:scale-95 text-xs font-bold leading-7">
+                    Subir audio
+                </button>
+
+                <button id="btn-audio-replay" disabled title="Repetir el último audio subido" aria-label="Repetir último audio" class="py-2.5 px-2 rounded-2xl bg-leaf-500/15 hover:bg-leaf-500/25 border border-leaf-500/30 text-leaf-200 flex flex-col items-center justify-center transition active:scale-95 text-xs font-bold disabled:opacity-40 disabled:pointer-events-none">
+                    <span class="leading-7">Repetir último</span>
+                    <span id="audio-last-name" class="hidden max-w-full truncate text-[10px] font-medium text-leaf-300/80 -mt-1"></span>
+                </button>
+            </div>
+
+            <!-- BOTONES DEL PANEL: Acciones (🫶) y Audio (🎵) -->
+            <div class="flex gap-2">
+                <button id="btn-actions-toggle" title="Acciones" aria-label="Acciones" class="flex-1 py-2.5 rounded-2xl bg-carrot-500/15 hover:bg-carrot-500/25 border border-carrot-500/30 text-carrot-200 flex items-center justify-center transition active:scale-95 text-xl">
+                    🫶
+                </button>
+
+                <button id="btn-audio-toggle" title="Audio" aria-label="Audio" class="flex-1 py-2.5 rounded-2xl bg-leaf-500/15 hover:bg-leaf-500/25 border border-leaf-500/30 text-leaf-200 flex items-center justify-center transition active:scale-95 text-xl disabled:opacity-40 disabled:pointer-events-none">
+                    🎵
+                </button>
+                <input type="file" id="audio-upload" accept="audio/*" class="hidden">
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Aviso breve (por ejemplo, cuando un audio supera la duración máxima) -->
+    <div id="toast" role="status" aria-live="polite" class="fixed top-4 left-1/2 -translate-x-1/2 z-[60] max-w-[90vw] px-4 py-2 rounded-xl bg-soil-900/95 backdrop-blur-xl border border-carrot-500/40 text-xs font-semibold text-carrot-200 text-center shadow-2xl opacity-0 pointer-events-none transition-opacity duration-300"></div>
+
+    <script>
+        /**
+         * ============================================================================
+         * TALKING FACE STUDIO - Motor de Calibración, Renderizado 2D y Lip-Sync
+         * ============================================================================
+         */
+
+        // Referencias DOM
+        const canvas = document.getElementById('face-canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const canvasContainer = document.getElementById('canvas-container');
+        const imageUpload = document.getElementById('image-upload');
+        const btnToggleMode = document.getElementById('btn-toggle-mode');
+        const modeIcon = document.getElementById('mode-icon');
+        const modeLabel = document.getElementById('mode-label');
+
+        // Controles del Menú Engranaje
+        const btnGearToggle = document.getElementById('btn-gear-toggle');
+        const btnCloseGear = document.getElementById('btn-close-gear');
+        const gearMenu = document.getElementById('gear-menu');
+        const editToolsSection = document.getElementById('edit-tools-section');
+        const playControlsBar = document.getElementById('play-controls-bar');
+        const btnStartPlay = document.getElementById('btn-start-play');
+        const btnResetZones = document.getElementById('btn-reset-zones');
+
+        // Controles de edición
+        const toolBtns = document.querySelectorAll('.tool-btn');
+        const mouthColorInput = document.getElementById('mouth-color');
+        const leftEyeColorInput = document.getElementById('left-eye-color');
+        const rightEyeColorInput = document.getElementById('right-eye-color');
+        const btnResampleLeft = document.getElementById('btn-resample-left');
+        const btnResampleRight = document.getElementById('btn-resample-right');
+        const featherRange = document.getElementById('feather-range');
+        const featherVal = document.getElementById('feather-val');
+
+        // Controles de juego
+        const btnMic = document.getElementById('btn-mic');
+        const micIcon = document.getElementById('mic-icon');
+        const btnVoiceToggle = document.getElementById('btn-voice-toggle');
+        const voiceIcon = document.getElementById('voice-icon');
+        const voiceMenu = document.getElementById('voice-menu');
+        const btnVoiceReplay = document.getElementById('btn-voice-replay');
+        let voiceMenuOpen = false;
+        const btnPitchToggle = document.getElementById('btn-pitch-toggle');
+        const pitchMenu = document.getElementById('pitch-menu');
+        const pitchBtns = document.querySelectorAll('.pitch-btn');
+        let pitchMenuOpen = false;
+        const btnActionsToggle = document.getElementById('btn-actions-toggle');
+        const actionsMenu = document.getElementById('actions-menu');
+        const btnAudioToggle = document.getElementById('btn-audio-toggle');
+        const audioMenu = document.getElementById('audio-menu');
+        const btnAudioPick = document.getElementById('btn-audio-pick');
+        const btnAudioReplay = document.getElementById('btn-audio-replay');
+        const audioLastName = document.getElementById('audio-last-name');
+        const audioFileInput = document.getElementById('audio-upload');
+        const toast = document.getElementById('toast');
+        const MAX_AUDIO_SECONDS = 120; // Duración máxima de un audio subido (2 min)
+        let actionsMenuOpen = false;
+        let audioMenuOpen = false;
+        let toastTimer = null;
+
+        // Estado global de la aplicación
+        const state = {
+            mode: 'play', // Cambia a 'edit' al subir foto o pulsar editar
+            gearOpen: false,
+            activeTool: 'mouth', // 'mouth' | 'leftEye' | 'rightEye'
+            image: null,
+            imgDrawRect: { x: 0, y: 0, w: 0, h: 0 },
+            zones: {
+                mouth: null,
+                leftEye: null,
+                rightEye: null
+            },
+            colors: {
+                mouthInterior: '#2a080d',
+                leftEyelid: '#d4a373',
+                rightEyelid: '#d4a373'
+            },
+            feather: 6,
+            mouthAngle: 0, // Rotación de la boca en radianes (pivote en el centro del borde plano)
+            isRotating: false,
+            isDragging: false,
+            dragStart: { x: 0, y: 0 },
+            dragCurrent: { x: 0, y: 0 },
+            anim: {
+                mouthOpen: 0,
+                targetMouthOpen: 0,
+                blinkProgress: 0,
+                isBlinking: false,
+                nextBlinkTime: performance.now() + 2500,
+                headTilt: 0,
+                headScale: 1,
+                actionTimer: null
+            },
+            audio: {
+                ctx: null,
+                isRecording: false,
+                mediaRecorder: null,
+                chunks: [],
+                pitchRate: 1.45,
+                analyser: null,
+                dataArray: null,
+                lastFile: null, // Último archivo de audio subido
+                lastRecorded: null, // Última voz grabada con el micrófono (no incluye archivos subidos)
+                isPlayingVoice: false
+            }
+        };
+
+        // Canvas oculto para muestrear colores puros de la imagen original sin guías
+        const offscreenCanvas = document.createElement('canvas');
+        const offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
+
+        /**
+         * Abre o cierra el panel desplegable del botón de engranaje
+         */
+        function toggleGearMenu(forceState) {
+            state.gearOpen = typeof forceState === 'boolean' ? forceState : !state.gearOpen;
+            if (state.gearOpen) {
+                gearMenu.classList.remove('closed');
+                gearMenu.classList.add('open');
+                btnGearToggle.classList.add('gear-btn-active', 'ring-2', 'ring-carrot-500/60');
+                // Cerrar menú de tono si está abierto
+                if (typeof pitchMenuOpen !== 'undefined' && pitchMenuOpen) togglePitchMenu(false);
+                if (actionsMenuOpen) toggleActionsMenu(false);
+                if (audioMenuOpen) toggleAudioMenu(false);
+                if (voiceMenuOpen) toggleVoiceMenu(false);
+            } else {
+                gearMenu.classList.remove('open');
+                gearMenu.classList.add('closed');
+                btnGearToggle.classList.remove('gear-btn-active', 'ring-2', 'ring-carrot-500/60');
+            }
+        }
+
+        btnGearToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleGearMenu();
+        });
+
+        btnCloseGear.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleGearMenu(false);
+        });
+
+        // Evitar que los clics dentro del menú cierren o disparen eventos del canvas
+        gearMenu.addEventListener('pointerdown', (e) => e.stopPropagation());
+
+        /**
+         * Inicializa el tamaño interno del canvas con alta densidad de píxeles
+         */
+        function resizeCanvas() {
+            const rect = canvasContainer.getBoundingClientRect();
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            if (state.image) {
+                computeImageDrawRect(rect.width, rect.height);
+            }
+        }
+
+        /**
+         * Calcula el rectángulo centrado manteniendo la relación de aspecto de la imagen
+         */
+        function computeImageDrawRect(canvasW, canvasH) {
+            const imgW = state.image.width;
+            const imgH = state.image.height;
+            const scale = Math.min(canvasW / imgW, canvasH / imgH);
+            const drawW = imgW * scale;
+            const drawH = imgH * scale;
+            const drawX = (canvasW - drawW) / 2;
+            const drawY = (canvasH - drawH) / 2;
+
+            state.imgDrawRect = { x: drawX, y: drawY, w: drawW, h: drawH };
+
+            offscreenCanvas.width = Math.max(1, Math.round(canvasW));
+            offscreenCanvas.height = Math.max(1, Math.round(canvasH));
+            offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+            offscreenCtx.drawImage(state.image, drawX, drawY, drawW, drawH);
+        }
+
+        /**
+         * Carga una imagen subida por el usuario
+         */
+        imageUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    state.image = img;
+                    state.zones = { mouth: null, leftEye: null, rightEye: null };
+                    state.mouthAngle = 0;
+                    updateZoneBadges();
+
+                    const rect = canvasContainer.getBoundingClientRect();
+                    computeImageDrawRect(rect.width, rect.height);
+
+                    setMode('edit');
+                    selectTool('mouth');
+                    // Cerrar el menú para que el usuario pueda arrastrar cómodamente sobre la foto
+                    toggleGearMenu(false);
+                    setStatus('📸 Arrastra sobre la foto para marcar la BOCA');
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        /**
+         * Muestrea el color promedio de los píxeles alrededor del borde de un ojo
+         */
+        function sampleEyelidColor(eyeKey) {
+            const zone = state.zones[eyeKey];
+            if (!zone || !state.image) return;
+
+            const pxRect = normToCanvasRect(zone);
+            const pad = 4;
+            const samplePoints = [
+                { x: pxRect.x - pad, y: pxRect.y - pad },
+                { x: pxRect.x + pxRect.w / 2, y: pxRect.y - pad },
+                { x: pxRect.x + pxRect.w + pad, y: pxRect.y - pad },
+                { x: pxRect.x - pad, y: pxRect.y + pxRect.h / 2 },
+                { x: pxRect.x + pxRect.w + pad, y: pxRect.y + pxRect.h / 2 },
+                { x: pxRect.x + pxRect.w / 2, y: pxRect.y + pxRect.h + pad }
+            ];
+
+            let r = 0, g = 0, b = 0, count = 0;
+            samplePoints.forEach(pt => {
+                const sx = Math.max(0, Math.min(offscreenCanvas.width - 1, Math.round(pt.x)));
+                const sy = Math.max(0, Math.min(offscreenCanvas.height - 1, Math.round(pt.y)));
+                const pixel = offscreenCtx.getImageData(sx, sy, 1, 1).data;
+                if (pixel[3] > 128) {
+                    r += pixel[0];
+                    g += pixel[1];
+                    b += pixel[2];
+                    count++;
+                }
+            });
+
+            if (count > 0) {
+                const hex = rgbToHex(Math.round(r / count), Math.round(g / count), Math.round(b / count));
+                if (eyeKey === 'leftEye') {
+                    state.colors.leftEyelid = hex;
+                    leftEyeColorInput.value = hex;
+                } else {
+                    state.colors.rightEyelid = hex;
+                    rightEyeColorInput.value = hex;
+                }
+            }
+        }
+
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+        }
+
+        function normToCanvasRect(norm) {
+            const { x, y, w, h } = state.imgDrawRect;
+            return {
+                x: x + norm.x * w,
+                y: y + norm.y * h,
+                w: norm.w * w,
+                h: norm.h * h
+            };
+        }
+
+        function canvasToNormRect(pxRect) {
+            const { x, y, w, h } = state.imgDrawRect;
+            return {
+                x: (pxRect.x - x) / w,
+                y: (pxRect.y - y) / h,
+                w: pxRect.w / w,
+                h: pxRect.h / h
+            };
+        }
+
+        function getPointerPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        /**
+         * Eventos de puntero sobre el Canvas (Edición y Juego)
+         */
+        canvas.addEventListener('pointerdown', (e) => {
+            if (!state.image) return;
+            // Si algún menú flotante está abierto, cerrarlo al tocar el lienzo
+            if (state.gearOpen) {
+                toggleGearMenu(false);
+                return;
+            }
+            if (typeof pitchMenuOpen !== 'undefined' && pitchMenuOpen) {
+                togglePitchMenu(false);
+                return;
+            }
+            if (actionsMenuOpen) {
+                toggleActionsMenu(false);
+                return;
+            }
+            if (audioMenuOpen) {
+                toggleAudioMenu(false);
+                return;
+            }
+            if (voiceMenuOpen) {
+                toggleVoiceMenu(false);
+                return;
+            }
+
+            const pos = getPointerPos(e);
+
+            if (state.mode === 'edit') {
+                // Si se toca el pivote de rotación de la boca, se rota en vez de dibujar un recuadro nuevo
+                const handle = getMouthRotateHandle();
+                if (handle && Math.hypot(pos.x - handle.hx, pos.y - handle.hy) <= 18) {
+                    state.isRotating = true;
+                    canvas.setPointerCapture(e.pointerId);
+                    return;
+                }
+                state.isDragging = true;
+                state.dragStart = pos;
+                state.dragCurrent = pos;
+                canvas.setPointerCapture(e.pointerId);
+            } else if (state.mode === 'play') {
+                handlePlayTap(pos);
+            }
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+            if (state.isRotating && state.mode === 'edit') {
+                const handle = getMouthRotateHandle();
+                if (handle) {
+                    const p = getPointerPos(e);
+                    state.mouthAngle = Math.atan2(p.y - handle.py, p.x - handle.px) + Math.PI / 2;
+                }
+                return;
+            }
+            if (!state.isDragging || state.mode !== 'edit') return;
+            state.dragCurrent = getPointerPos(e);
+        });
+
+        canvas.addEventListener('pointerup', (e) => {
+            if (state.isRotating) {
+                state.isRotating = false;
+                canvas.releasePointerCapture(e.pointerId);
+                return;
+            }
+            if (!state.isDragging || state.mode !== 'edit') return;
+            state.isDragging = false;
+            canvas.releasePointerCapture(e.pointerId);
+
+            const x1 = Math.min(state.dragStart.x, state.dragCurrent.x);
+            const y1 = Math.min(state.dragStart.y, state.dragCurrent.y);
+            const w = Math.abs(state.dragCurrent.x - state.dragStart.x);
+            const h = Math.abs(state.dragCurrent.y - state.dragStart.y);
+
+            if (w < 10 || h < 8) return;
+
+            const normRect = canvasToNormRect({ x: x1, y: y1, w, h });
+            state.zones[state.activeTool] = normRect;
+
+            if (state.activeTool === 'leftEye' || state.activeTool === 'rightEye') {
+                sampleEyelidColor(state.activeTool);
+            }
+
+            updateZoneBadges();
+            advanceToNextTool();
+        });
+
+        /**
+         * Avanza automáticamente a la siguiente herramienta tras marcar una zona
+         */
+        function advanceToNextTool() {
+            if (state.activeTool === 'mouth' && !state.zones.leftEye) {
+                selectTool('leftEye');
+                setStatus('👁️ ¡Boca lista! Ahora arrastra sobre el OJO IZQUIERDO');
+            } else if (state.activeTool === 'leftEye' && !state.zones.rightEye) {
+                selectTool('rightEye');
+                setStatus('👁️ ¡Ojo izq. listo! Ahora marca el OJO DERECHO');
+            } else if (state.zones.mouth && state.zones.leftEye && state.zones.rightEye) {
+                setStatus('✅ ¡Zonas listas! Abre ⚙️ y pulsa "Volver a Jugar"');
+                toggleGearMenu(true);
+            }
+        }
+
+        /**
+         * Cambia la herramienta activa en el panel de edición
+         */
+        function selectTool(toolName) {
+            state.activeTool = toolName;
+            toolBtns.forEach(btn => {
+                const isSelected = btn.dataset.tool === toolName;
+                btn.classList.remove('border-carrot-500', 'bg-carrot-500/15', 'border-leaf-500', 'bg-leaf-500/15', 'border-wheat-500', 'bg-wheat-500/15', 'border-soil-800', 'bg-soil-800/60');
+                if (isSelected) {
+                    if (toolName === 'mouth') btn.classList.add('border-carrot-500', 'bg-carrot-500/15');
+                    if (toolName === 'leftEye') btn.classList.add('border-leaf-500', 'bg-leaf-500/15');
+                    if (toolName === 'rightEye') btn.classList.add('border-wheat-500', 'bg-wheat-500/15');
+                } else {
+                    btn.classList.add('border-soil-800', 'bg-soil-800/60');
+                }
+            });
+            updateZoneBadges();
+        }
+
+        function updateZoneBadges() {
+            ['mouth', 'leftEye', 'rightEye'].forEach(key => {
+                const badge = document.getElementById(`check-${key}`);
+                if (state.activeTool === key) {
+                    badge.textContent = 'Activa';
+                    badge.className = 'text-[9px] font-bold text-carrot-300';
+                } else if (state.zones[key]) {
+                    badge.textContent = '✓ Lista';
+                    badge.className = 'text-[9px] font-bold text-leaf-400';
+                } else {
+                    badge.textContent = 'Falta';
+                    badge.className = 'text-[9px] font-semibold text-soil-400';
+                }
+            });
+        }
+
+        /**
+         * Alterna entre Modo Edición y Modo Jugar
+         */
+        function setMode(newMode) {
+            state.mode = newMode;
+            if (newMode === 'play') {
+                editToolsSection.classList.add('hidden');
+                editToolsSection.classList.remove('flex');
+                playControlsBar.classList.remove('opacity-50', 'pointer-events-none');
+
+                canvas.classList.remove('cursor-crosshair');
+                canvas.classList.add('cursor-pointer');
+
+                modeIcon.textContent = '✏️';
+                modeLabel.textContent = '';
+                btnToggleMode.className = 'bg-gradient-to-r from-carrot-600 to-carrot-700 hover:from-carrot-500 hover:to-carrot-600 text-white font-extrabold text-xs py-2.5 px-3 rounded-xl shadow-lg shadow-carrot-500/25 transition transform active:scale-95 flex items-center justify-center gap-2';
+
+                triggerBlink();
+            } else {
+                editToolsSection.classList.remove('hidden');
+                editToolsSection.classList.add('flex');
+                playControlsBar.classList.add('opacity-50', 'pointer-events-none');
+                toggleActionsMenu(false);
+                toggleAudioMenu(false);
+
+                canvas.classList.remove('cursor-pointer');
+                canvas.classList.add('cursor-crosshair');
+
+                modeIcon.textContent = '▶️';
+                modeLabel.textContent = 'Jugar';
+                btnToggleMode.className = 'bg-gradient-to-r from-leaf-400 to-leaf-500 hover:from-leaf-300 hover:to-leaf-400 text-soil-950 font-extrabold text-xs py-2.5 px-3 rounded-xl shadow-lg shadow-leaf-500/25 transition transform active:scale-95 flex items-center justify-center gap-2';
+            }
+        }
+
+        function setStatus(msg) {
+            // Barra de estado eliminada; se mantiene la función para no romper llamadas
+        }
+
+        function setMouthPreset(hex) {
+            state.colors.mouthInterior = hex;
+            mouthColorInput.value = hex;
+        }
+
+        /**
+         * ============================================================================
+         * MOTOR DE RENDERIZADO 2D (Animación de Boca, Párpados y Guías)
+         * ============================================================================
+         */
+        function renderLoop(now) {
+            const rect = canvasContainer.getBoundingClientRect();
+            const cw = rect.width;
+            const ch = rect.height;
+
+            ctx.clearRect(0, 0, cw, ch);
+
+            if (state.image) {
+                updateAnimations(now);
+
+                ctx.save();
+                const centerX = cw / 2;
+                const centerY = ch / 2;
+                ctx.translate(centerX, centerY);
+                ctx.rotate(state.anim.headTilt);
+                ctx.scale(state.anim.headScale, state.anim.headScale);
+                ctx.translate(-centerX, -centerY);
+
+                // 1. Dibujar imagen base
+                const { x, y, w, h } = state.imgDrawRect;
+                ctx.drawImage(state.image, x, y, w, h);
+
+                // 2. Renderizar animación de párpados y boca en Modo Jugar
+                if (state.mode === 'play') {
+                    drawEyelid('leftEye', state.colors.leftEyelid);
+                    drawEyelid('rightEye', state.colors.rightEyelid);
+                    drawAnimatedMouth();
+                }
+
+                ctx.restore();
+
+                // 3. Guías interactivas en Modo Edición
+                if (state.mode === 'edit') {
+                    drawEditGuides();
+                }
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        function updateAnimations(now) {
+            if (state.mode === 'play') {
+                if (!state.anim.isBlinking && now >= state.anim.nextBlinkTime) {
+                    triggerBlink();
+                }
+
+                if (state.anim.isBlinking) {
+                    state.anim.blinkProgress += 0.18;
+                    if (state.anim.blinkProgress >= 2) {
+                        state.anim.blinkProgress = 0;
+                        state.anim.isBlinking = false;
+                        state.anim.nextBlinkTime = now + 2200 + Math.random() * 3200;
+                    }
+                }
+            }
+
+            if (state.audio.isPlayingVoice && state.audio.analyser) {
+                state.audio.analyser.getByteTimeDomainData(state.audio.dataArray);
+                let sum = 0;
+                for (let i = 0; i < state.audio.dataArray.length; i++) {
+                    const v = (state.audio.dataArray[i] - 128) / 128;
+                    sum += v * v;
+                }
+                const rms = Math.sqrt(sum / state.audio.dataArray.length);
+                state.anim.targetMouthOpen = Math.min(1, rms * 6.5);
+            }
+
+            state.anim.mouthOpen += (state.anim.targetMouthOpen - state.anim.mouthOpen) * 0.35;
+        }
+
+        function triggerBlink() {
+            state.anim.isBlinking = true;
+            state.anim.blinkProgress = 0;
+        }
+
+        function drawEyelid(eyeKey, color) {
+            const zone = state.zones[eyeKey];
+            if (!zone || !state.anim.isBlinking) return;
+
+            const factor = state.anim.blinkProgress <= 1
+                ? state.anim.blinkProgress
+                : 2 - state.anim.blinkProgress;
+
+            if (factor <= 0.02) return;
+
+            const r = normToCanvasRect(zone);
+            const lidHeight = r.h * factor;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.ellipse(r.x + r.w / 2, r.y + r.h / 2, r.w * 0.54, r.h * 0.56, 0, 0, Math.PI * 2);
+            ctx.clip();
+
+            ctx.fillStyle = color;
+            ctx.fillRect(r.x - 4, r.y - 4, r.w + 8, lidHeight + 4);
+
+            ctx.strokeStyle = 'rgba(15, 23, 42, 0.45)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(r.x, r.y + lidHeight);
+            ctx.quadraticCurveTo(r.x + r.w / 2, r.y + lidHeight + 3, r.x + r.w, r.y + lidHeight);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawAnimatedMouth() {
+            const zone = state.zones.mouth;
+            if (!zone) return;
+
+            const openAmount = state.anim.mouthOpen;
+            if (openAmount < 0.015) return;
+
+            const r = normToCanvasRect(zone);
+            const maxDrop = r.h * 0.65;
+            const dropY = openAmount * maxDrop;
+
+            ctx.save();
+
+            // Rotar todo alrededor del centro del borde plano de la boca
+            const pivotX = r.x + r.w / 2;
+            const pivotY = r.y;
+            const angle = state.mouthAngle;
+            ctx.translate(pivotX, pivotY);
+            ctx.rotate(angle);
+            ctx.translate(-pivotX, -pivotY);
+
+            // 1. Interior oscuro de la boca: semióvalo con el borde plano sobre la línea de los labios
+            const cavityHeight = dropY + r.h * 0.35;
+            const cx = r.x + r.w / 2;
+
+            ctx.beginPath();
+            ctx.ellipse(cx, r.y, r.w * 0.5, Math.max(4, cavityHeight), 0, 0, Math.PI);
+            ctx.closePath();
+            ctx.fillStyle = state.colors.mouthInterior;
+            ctx.fill();
+
+            if (openAmount > 0.25) {
+                ctx.save();
+                ctx.clip();
+                ctx.fillStyle = '#be123c';
+                ctx.beginPath();
+                const tongueRy = cavityHeight * 0.35;
+                ctx.ellipse(cx, r.y + dropY + tongueRy * 0.6, r.w * 0.28, tongueRy, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // 2. Mandíbula recortada desplazada hacia abajo
+            ctx.save();
+            const jawY = r.y + dropY;
+
+            if (state.feather > 0) {
+                ctx.filter = `blur(${state.feather * 0.35}px)`;
+            }
+
+            // Semióvalo con el borde plano hacia arriba (en el sistema rotado)
+            ctx.beginPath();
+            ctx.ellipse(r.x + r.w / 2, jawY, r.w * 0.52, r.h * 1.02, 0, 0, Math.PI);
+            ctx.closePath();
+            ctx.clip();
+            ctx.filter = 'none';
+
+            // Volver al sistema sin rotar para copiar los píxeles reales de la imagen,
+            // desplazados en la dirección "hacia abajo" de la boca inclinada
+            ctx.translate(pivotX, pivotY);
+            ctx.rotate(-angle);
+            ctx.translate(-pivotX, -pivotY);
+            ctx.drawImage(
+                offscreenCanvas,
+                -Math.sin(angle) * dropY,
+                Math.cos(angle) * dropY,
+                offscreenCanvas.width,
+                offscreenCanvas.height
+            );
+
+            ctx.restore();
+            ctx.restore();
+        }
+
+        /**
+         * Pivote de la boca (centro de su borde plano) y posición del control de rotación
+         */
+        function getMouthRotateHandle() {
+            const zone = state.zones.mouth;
+            if (!zone) return null;
+            const r = normToCanvasRect(zone);
+            const px = r.x + r.w / 2;
+            const py = r.y;
+            const dist = 30;
+            const a = state.mouthAngle;
+            return { px, py, hx: px + Math.sin(a) * dist, hy: py - Math.cos(a) * dist };
+        }
+
+        function drawEditGuides() {
+            const configs = [
+                { key: 'mouth', label: '👄 Boca', color: '#df8d52', fill: 'rgba(223, 141, 82, 0.18)' },
+                { key: 'leftEye', label: '👁️ Ojo Izq.', color: '#88ab67', fill: 'rgba(136, 171, 103, 0.18)' },
+                { key: 'rightEye', label: '👁️ Ojo Der.', color: '#d1a95a', fill: 'rgba(209, 169, 90, 0.18)' }
+            ];
+
+            configs.forEach(cfg => {
+                const zone = state.zones[cfg.key];
+                if (!zone) return;
+                const r = normToCanvasRect(zone);
+
+                ctx.save();
+                ctx.fillStyle = cfg.fill;
+                ctx.strokeStyle = cfg.color;
+                ctx.lineWidth = state.activeTool === cfg.key ? 3 : 2;
+                ctx.setLineDash([6, 4]);
+
+                if (cfg.key === 'mouth') {
+                    // Boca: semióvalo con el borde plano hacia arriba, rotado alrededor del centro de ese borde
+                    ctx.save();
+                    ctx.translate(r.x + r.w / 2, r.y);
+                    ctx.rotate(state.mouthAngle);
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, r.w / 2, r.h, 0, 0, Math.PI);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
+                } else {
+                    ctx.beginPath();
+                    ctx.rect(r.x, r.y, r.w, r.h);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.setLineDash([]);
+                    ctx.beginPath();
+                    ctx.ellipse(r.x + r.w / 2, r.y + r.h / 2, r.w / 2, r.h / 2, 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
+                const textW = ctx.measureText(cfg.label).width + 12;
+                const labelY = Math.max(18, r.y - 6);
+                ctx.fillStyle = cfg.color;
+                ctx.beginPath();
+                ctx.roundRect(r.x, labelY - 14, textW, 18, 6);
+                ctx.fill();
+
+                ctx.fillStyle = '#0d130e';
+                ctx.fillText(cfg.label, r.x + 6, labelY - 1);
+                ctx.restore();
+            });
+
+            // Pivote de rotación de la boca
+            const handle = getMouthRotateHandle();
+            if (handle) {
+                ctx.save();
+                ctx.strokeStyle = '#df8d52';
+                ctx.fillStyle = '#df8d52';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(handle.px, handle.py);
+                ctx.lineTo(handle.hx, handle.hy);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(handle.px, handle.py, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(handle.hx, handle.hy, 9, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            if (state.isDragging) {
+                const x = Math.min(state.dragStart.x, state.dragCurrent.x);
+                const y = Math.min(state.dragStart.y, state.dragCurrent.y);
+                const w = Math.abs(state.dragCurrent.x - state.dragStart.x);
+                const h = Math.abs(state.dragCurrent.y - state.dragStart.y);
+
+                ctx.save();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([5, 5]);
+                ctx.strokeRect(x, y, w, h);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+                ctx.fillRect(x, y, w, h);
+                ctx.restore();
+            }
+        }
+
+        /**
+         * ============================================================================
+         * INTERACCIONES ESTILO TALKING TOM Y SÍNTESIS DE AUDIO
+         * ============================================================================
+         */
+        function getAudioContext() {
+            if (!state.audio.ctx) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                state.audio.ctx = new AudioCtx();
+            }
+            if (state.audio.ctx.state === 'suspended') {
+                state.audio.ctx.resume();
+            }
+            return state.audio.ctx;
+        }
+
+        function spawnParticles(emoji, count = 6) {
+            const rect = canvasContainer.getBoundingClientRect();
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    const el = document.createElement('div');
+                    el.className = 'particle';
+                    el.textContent = emoji;
+                    const rx = rect.width * (0.25 + Math.random() * 0.5);
+                    const ry = rect.height * (0.35 + Math.random() * 0.3);
+                    el.style.left = `${rx}px`;
+                    el.style.top = `${ry}px`;
+                    canvasContainer.appendChild(el);
+                    setTimeout(() => el.remove(), 1300);
+                }, i * 110);
+            }
+        }
+
+        function playSynthSFX(type) {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+
+                if (type === 'purr') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(280, now);
+                    osc.frequency.exponentialRampToValueAtTime(490, now + 0.35);
+                    osc.frequency.exponentialRampToValueAtTime(340, now + 0.85);
+                    gain.gain.setValueAtTime(0.01, now);
+                    gain.gain.linearRampToValueAtTime(0.22, now + 0.15);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.9);
+                } else if (type === 'tickle') {
+                    const notes = [523, 659, 784, 659, 880, 1046];
+                    notes.forEach((f, idx) => {
+                        const t = now + idx * 0.12;
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(f, t);
+                        gain.gain.setValueAtTime(0.01, t);
+                        gain.gain.linearRampToValueAtTime(0.2, t + 0.03);
+                        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(t);
+                        osc.stop(t + 0.12);
+                    });
+                } else if (type === 'eat') {
+                    for (let i = 0; i < 3; i++) {
+                        const t = now + i * 0.32;
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(170, t);
+                        osc.frequency.exponentialRampToValueAtTime(400, t + 0.12);
+                        osc.frequency.exponentialRampToValueAtTime(140, t + 0.24);
+                        gain.gain.setValueAtTime(0.01, t);
+                        gain.gain.linearRampToValueAtTime(0.26, t + 0.06);
+                        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(t);
+                        osc.stop(t + 0.26);
+                    }
+                } else if (type === 'poke') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(220, now + 0.18);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.22);
+                }
+            } catch (err) {
+                console.warn('Audio no disponible:', err);
+            }
+        }
+
+        const actionBtns = {
+            pet: document.getElementById('btn-act-pet'),
+            tickle: document.getElementById('btn-act-tickle'),
+            feed: document.getElementById('btn-act-feed'),
+            poke: document.getElementById('btn-act-poke')
+        };
+        let activeAction = null;
+
+        /**
+         * Muestra el emoji (en lugar del texto) solo en el botón de la acción en curso
+         */
+        function setActiveAction(name) {
+            activeAction = name;
+            Object.entries(actionBtns).forEach(([key, btn]) => {
+                btn.classList.toggle('action-active', key === name);
+            });
+        }
+
+        function clearActionTimers() {
+            if (state.anim.actionTimer) {
+                clearInterval(state.anim.actionTimer);
+                state.anim.actionTimer = null;
+            }
+            canvasContainer.classList.remove('canvas-shake');
+            state.anim.headTilt = 0;
+            state.anim.headScale = 1;
+            if (!state.audio.isPlayingVoice) {
+                state.anim.targetMouthOpen = 0;
+            }
+        }
+
+        function actionPet() {
+            clearActionTimers();
+            setActiveAction('pet');
+            setStatus('❤️ ¡Purrrr! Le encanta que lo acaricien');
+            playSynthSFX('purr');
+            spawnParticles('❤️', 6);
+            triggerBlink();
+
+            let step = 0;
+            state.anim.actionTimer = setInterval(() => {
+                step++;
+                state.anim.headTilt = Math.sin(step * 0.5) * 0.04;
+                state.anim.headScale = 1.02;
+                if (step > 22) {
+                    clearActionTimers();
+                    setActiveAction(null);
+                    setStatus('🎭 ¡Personaje vivo! Toca su cara o usa el micrófono');
+                }
+            }, 50);
+        }
+
+        function actionTickle() {
+            clearActionTimers();
+            setActiveAction('tickle');
+            setStatus('😆 ¡Jajaja! ¡Eso da muchas cosquillas!');
+            playSynthSFX('tickle');
+            spawnParticles('😆', 6);
+            canvasContainer.classList.add('canvas-shake');
+
+            let step = 0;
+            state.anim.actionTimer = setInterval(() => {
+                step++;
+                state.anim.targetMouthOpen = step % 2 === 0 ? 0.85 : 0.25;
+                if (step > 12) {
+                    clearActionTimers();
+                    setActiveAction(null);
+                    setStatus('🎭 ¡Personaje vivo! Toca su cara o usa el micrófono');
+                }
+            }, 90);
+        }
+
+        function actionFeed() {
+            clearActionTimers();
+            setActiveAction('feed');
+            setStatus('🍕 ¡Ñam, ñam, ñam! ¡Qué delicioso!');
+            playSynthSFX('eat');
+            spawnParticles('🍕', 5);
+
+            let step = 0;
+            state.anim.actionTimer = setInterval(() => {
+                step++;
+                state.anim.targetMouthOpen = step % 2 === 1 ? 0.9 : 0.05;
+                state.anim.headScale = step % 2 === 1 ? 1.03 : 0.99;
+                if (step > 8) {
+                    clearActionTimers();
+                    setActiveAction(null);
+                    setStatus('😋 ¡Qué rico estuvo eso!');
+                }
+            }, 150);
+        }
+
+        function actionPoke() {
+            clearActionTimers();
+            setActiveAction('poke');
+            setStatus('😲 ¡Ey! ¡Me tocaste la cara!');
+            playSynthSFX('poke');
+            triggerBlink();
+            state.anim.targetMouthOpen = 0.75;
+            state.anim.headScale = 0.95;
+            state.anim.headTilt = (Math.random() - 0.5) * 0.08;
+
+            setTimeout(() => {
+                clearActionTimers();
+                if (activeAction === 'poke') setActiveAction(null);
+                setStatus('🎭 ¡Personaje vivo! Toca su cara o usa el micrófono');
+            }, 450);
+        }
+
+        function handlePlayTap(pos) {
+            const checkHit = (zone) => {
+                if (!zone) return false;
+                const r = normToCanvasRect(zone);
+                return pos.x >= r.x && pos.x <= r.x + r.w && pos.y >= r.y && pos.y <= r.y + r.h;
+            };
+
+            if (checkHit(state.zones.leftEye) || checkHit(state.zones.rightEye)) {
+                triggerBlink();
+                playSynthSFX('poke');
+                setStatus('👁️ ¡Parpadeo rápido!');
+                return;
+            }
+
+            if (checkHit(state.zones.mouth)) {
+                actionTickle();
+                return;
+            }
+
+            const { y, h } = state.imgDrawRect;
+            if (pos.y < y + h * 0.45) {
+                actionPet();
+            } else {
+                actionPoke();
+            }
+        }
+
+        /**
+         * ============================================================================
+         * GRABACIÓN DE VOZ Y SINCRONIZACIÓN LABIAL EN TIEMPO REAL (LIP-SYNC)
+         * ============================================================================
+         */
+        async function toggleVoiceRecording() {
+            if (state.audio.isRecording && state.audio.mediaRecorder) {
+                state.audio.mediaRecorder.stop();
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                state.audio.chunks = [];
+                const recorder = new MediaRecorder(stream);
+                state.audio.mediaRecorder = recorder;
+
+                recorder.onstart = () => {
+                    state.audio.isRecording = true;
+                    btnMic.classList.add('recording-active');
+                    micIcon.textContent = '⏹️';
+                    // El 🗣️ pasa a ser el botón de parar mientras se graba
+                    btnVoiceToggle.classList.add('recording-active');
+                    voiceIcon.textContent = '⏹️';
+                    btnVoiceToggle.setAttribute('title', 'Parar grabación');
+                    btnVoiceToggle.setAttribute('aria-label', 'Parar grabación');
+                    if (voiceMenuOpen) toggleVoiceMenu(false);
+                    btnAudioToggle.disabled = true;
+                    if (audioMenuOpen) toggleAudioMenu(false);
+                    btnMic.setAttribute('title', 'Parar grabación');
+                    btnMic.setAttribute('aria-label', 'Parar grabación');
+                    setStatus('👂 Habla ahora... te está escuchando');
+                };
+
+                recorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) state.audio.chunks.push(e.data);
+                };
+
+                recorder.onstop = () => {
+                    state.audio.isRecording = false;
+                    btnMic.classList.remove('recording-active');
+                    micIcon.textContent = '🎙️';
+                    btnVoiceToggle.classList.remove('recording-active');
+                    voiceIcon.textContent = '🗣️';
+                    btnVoiceToggle.setAttribute('title', 'Voz');
+                    btnVoiceToggle.setAttribute('aria-label', 'Voz');
+                    btnAudioToggle.disabled = false;
+                    btnMic.setAttribute('title', 'Tocar para hablar');
+                    btnMic.setAttribute('aria-label', 'Tocar para hablar');
+                    stream.getTracks().forEach(t => t.stop());
+
+                    const blob = new Blob(state.audio.chunks, { type: recorder.mimeType || 'audio/webm' });
+                    state.audio.lastRecorded = blob;
+                    btnVoiceReplay.disabled = false;
+                    playVoiceWithLipSync(blob);
+                };
+
+                recorder.start();
+
+                setTimeout(() => {
+                    if (state.audio.isRecording && recorder.state === 'recording') {
+                        recorder.stop();
+                    }
+                }, 8000);
+
+            } catch (err) {
+                console.error(err);
+                setStatus('⚠️ Permiso de micrófono denegado o no disponible');
+            }
+        }
+
+        /**
+         * Oculta (y deshabilita) o restaura los 3 botones flotantes sobre la imagen
+         */
+        function setVoiceUiHidden(hidden) {
+            [btnGearToggle, btnPitchToggle, btnVoiceToggle].forEach(b => {
+                b.classList.toggle('voice-hidden', hidden);
+                b.disabled = hidden;
+            });
+            btnAudioToggle.disabled = hidden;
+        }
+
+        function playVoiceWithLipSync(blob, maxSeconds) {
+            const url = URL.createObjectURL(blob);
+            const audioEl = new Audio(url);
+
+            audioEl.playbackRate = state.audio.pitchRate;
+            if ('preservesPitch' in audioEl) audioEl.preservesPitch = false;
+            if ('mozPreservesPitch' in audioEl) audioEl.mozPreservesPitch = false;
+            if ('webkitPreservesPitch' in audioEl) audioEl.webkitPreservesPitch = false;
+
+            try {
+                const actx = getAudioContext();
+                const source = actx.createMediaElementSource(audioEl);
+                const analyser = actx.createAnalyser();
+                analyser.fftSize = 256;
+
+                source.connect(analyser);
+                analyser.connect(actx.destination);
+
+                state.audio.analyser = analyser;
+                state.audio.dataArray = new Uint8Array(analyser.frequencyBinCount);
+            } catch (err) {
+                console.warn('AnalyserNode fallback:', err);
+            }
+
+            audioEl.onplay = () => {
+                state.audio.isPlayingVoice = true;
+                if (state.gearOpen) toggleGearMenu(false);
+                if (pitchMenuOpen) togglePitchMenu(false);
+                if (actionsMenuOpen) toggleActionsMenu(false);
+                if (audioMenuOpen) toggleAudioMenu(false);
+                if (voiceMenuOpen) toggleVoiceMenu(false);
+                setVoiceUiHidden(true);
+                setStatus('🗣️ ¡Repitiendo lo que dijiste!');
+            };
+
+            audioEl.onerror = () => {
+                setVoiceUiHidden(false);
+            };
+
+            const handleEnded = () => {
+                state.audio.isPlayingVoice = false;
+                setVoiceUiHidden(false);
+                state.anim.targetMouthOpen = 0;
+                URL.revokeObjectURL(url);
+                setStatus('🎭 ¡Personaje vivo! Toca su cara o usa el micrófono');
+            };
+            audioEl.onended = handleEnded;
+
+            // Respaldo: si el archivo no informó su duración, se corta al llegar al máximo
+            if (maxSeconds) {
+                audioEl.ontimeupdate = () => {
+                    if (audioEl.currentTime >= maxSeconds + 0.5) {
+                        audioEl.ontimeupdate = null;
+                        audioEl.pause();
+                        handleEnded();
+                    }
+                };
+            }
+
+            audioEl.play().catch(err => {
+                console.error(err);
+                state.audio.isPlayingVoice = false;
+                setVoiceUiHidden(false);
+            });
+        }
+
+        /**
+         * ============================================================================
+         * ENLACE DE EVENTOS UI E INICIALIZACIÓN
+         * ============================================================================
+         */
+        btnToggleMode.addEventListener('click', () => {
+            const nextMode = state.mode === 'edit' ? 'play' : 'edit';
+            setMode(nextMode);
+            if (nextMode === 'play') {
+                toggleGearMenu(false);
+            }
+        });
+
+        btnStartPlay.addEventListener('click', () => {
+            setMode('play');
+            toggleGearMenu(false);
+        });
+
+        btnResetZones.addEventListener('click', () => {
+            state.zones = { mouth: null, leftEye: null, rightEye: null };
+            state.mouthAngle = 0;
+            selectTool('mouth');
+            toggleGearMenu(false);
+            setStatus('🧹 Zonas borradas. Arrastra sobre la boca en la imagen');
+        });
+
+        toolBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                selectTool(btn.dataset.tool);
+                toggleGearMenu(false);
+                const names = { mouth: 'la BOCA', leftEye: 'el OJO IZQUIERDO', rightEye: 'el OJO DERECHO' };
+                setStatus(`✏️ Arrastra un recuadro sobre ${names[btn.dataset.tool]}`);
+            });
+        });
+
+        mouthColorInput.addEventListener('input', (e) => {
+            state.colors.mouthInterior = e.target.value;
+        });
+
+        leftEyeColorInput.addEventListener('input', (e) => {
+            state.colors.leftEyelid = e.target.value;
+        });
+
+        rightEyeColorInput.addEventListener('input', (e) => {
+            state.colors.rightEyelid = e.target.value;
+        });
+
+        btnResampleLeft.addEventListener('click', () => sampleEyelidColor('leftEye'));
+        btnResampleRight.addEventListener('click', () => sampleEyelidColor('rightEye'));
+
+        featherRange.addEventListener('input', (e) => {
+            state.feather = parseInt(e.target.value, 10);
+            featherVal.textContent = `${state.feather} px`;
+        });
+
+        // Menú de voz (🗣️): micrófono y repetir lo último
+        function toggleVoiceMenu(forceState) {
+            voiceMenuOpen = typeof forceState === 'boolean' ? forceState : !voiceMenuOpen;
+            if (voiceMenuOpen) {
+                voiceMenu.classList.remove('closed');
+                voiceMenu.classList.add('open');
+                btnVoiceToggle.classList.add('ring-2', 'ring-carrot-400/60');
+                if (state.gearOpen) toggleGearMenu(false);
+                if (pitchMenuOpen) togglePitchMenu(false);
+                if (actionsMenuOpen) toggleActionsMenu(false);
+                if (audioMenuOpen) toggleAudioMenu(false);
+            } else {
+                voiceMenu.classList.remove('open');
+                voiceMenu.classList.add('closed');
+                btnVoiceToggle.classList.remove('ring-2', 'ring-carrot-400/60');
+            }
+        }
+
+        btnVoiceToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Mientras se graba, este botón sirve para parar la grabación
+            if (state.audio.isRecording) {
+                toggleVoiceRecording();
+                return;
+            }
+            toggleVoiceMenu();
+        });
+
+        // Repetir de nuevo la última voz grabada con el micrófono (nunca un archivo subido)
+        btnVoiceReplay.addEventListener('click', () => {
+            const last = state.audio.lastRecorded;
+            if (!last || state.audio.isRecording || state.audio.isPlayingVoice) return;
+            toggleVoiceMenu(false);
+            getAudioContext();
+            playVoiceWithLipSync(last);
+        });
+
+        // Menú de acciones (🫶)
+        function toggleActionsMenu(forceState) {
+            actionsMenuOpen = typeof forceState === 'boolean' ? forceState : !actionsMenuOpen;
+            if (actionsMenuOpen) {
+                actionsMenu.classList.remove('closed');
+                actionsMenu.classList.add('open');
+                btnActionsToggle.classList.add('ring-2', 'ring-carrot-400/60');
+                if (state.gearOpen) toggleGearMenu(false);
+                if (pitchMenuOpen) togglePitchMenu(false);
+                if (audioMenuOpen) toggleAudioMenu(false);
+                if (voiceMenuOpen) toggleVoiceMenu(false);
+            } else {
+                actionsMenu.classList.remove('open');
+                actionsMenu.classList.add('closed');
+                btnActionsToggle.classList.remove('ring-2', 'ring-carrot-400/60');
+            }
+        }
+
+        btnActionsToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleActionsMenu();
+        });
+
+        // Menú de audio (🎵): subir un archivo o repetir el último subido
+        function toggleAudioMenu(forceState) {
+            audioMenuOpen = typeof forceState === 'boolean' ? forceState : !audioMenuOpen;
+            if (audioMenuOpen) {
+                audioMenu.classList.remove('closed');
+                audioMenu.classList.add('open');
+                btnAudioToggle.classList.add('ring-2', 'ring-leaf-400/60');
+                if (state.gearOpen) toggleGearMenu(false);
+                if (pitchMenuOpen) togglePitchMenu(false);
+                if (actionsMenuOpen) toggleActionsMenu(false);
+                if (voiceMenuOpen) toggleVoiceMenu(false);
+            } else {
+                audioMenu.classList.remove('open');
+                audioMenu.classList.add('closed');
+                btnAudioToggle.classList.remove('ring-2', 'ring-leaf-400/60');
+            }
+        }
+
+        btnAudioToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleAudioMenu();
+        });
+
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 3500);
+        }
+
+        function formatTime(totalSeconds) {
+            const m = Math.floor(totalSeconds / 60);
+            const sec = Math.floor(totalSeconds % 60);
+            return `${m}:${String(sec).padStart(2, '0')}`;
+        }
+
+        /**
+         * Lee la duración de un archivo de audio (segundos).
+         * Devuelve null si no se puede leer, o NaN/Infinity si el archivo no informa su duración.
+         */
+        function getAudioDuration(file) {
+            return new Promise(resolve => {
+                const url = URL.createObjectURL(file);
+                const probe = new Audio();
+                const done = (value) => {
+                    clearTimeout(timer);
+                    probe.onloadedmetadata = null;
+                    probe.onerror = null;
+                    probe.removeAttribute('src');
+                    URL.revokeObjectURL(url);
+                    resolve(value);
+                };
+                const timer = setTimeout(() => done(NaN), 4000);
+                probe.preload = 'metadata';
+                probe.onloadedmetadata = () => done(probe.duration);
+                probe.onerror = () => done(null);
+                probe.src = url;
+            });
+        }
+
+        function updateAudioReplayButton() {
+            const file = state.audio.lastFile;
+            btnAudioReplay.disabled = !file;
+            audioLastName.textContent = file ? file.name : '';
+            audioLastName.classList.toggle('hidden', !file);
+        }
+
+        // Subir un archivo de audio: el personaje lo repite con el tono seleccionado
+        btnAudioPick.addEventListener('click', () => {
+            if (state.audio.isRecording || state.audio.isPlayingVoice) return;
+            toggleAudioMenu(false);
+            getAudioContext(); // Desbloquea el audio aprovechando el gesto del usuario
+            audioFileInput.click();
+        });
+
+        // Volver a reproducir el último audio subido (con el tono que esté seleccionado ahora)
+        btnAudioReplay.addEventListener('click', () => {
+            if (!state.audio.lastFile || state.audio.isRecording || state.audio.isPlayingVoice) return;
+            toggleAudioMenu(false);
+            getAudioContext();
+            playVoiceWithLipSync(state.audio.lastFile, MAX_AUDIO_SECONDS);
+        });
+
+        audioFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            e.target.value = ''; // Permite volver a elegir el mismo archivo
+            if (!file) return;
+
+            const duration = await getAudioDuration(file);
+            if (duration === null) {
+                showToast('No se pudo leer ese archivo de audio');
+                return;
+            }
+            if (Number.isFinite(duration) && duration > MAX_AUDIO_SECONDS) {
+                showToast(`El audio dura ${formatTime(duration)} y el máximo es ${formatTime(MAX_AUDIO_SECONDS)}`);
+                return;
+            }
+            if (state.audio.isRecording || state.audio.isPlayingVoice) return;
+
+            state.audio.lastFile = file;
+            updateAudioReplayButton();
+            playVoiceWithLipSync(file, MAX_AUDIO_SECONDS);
+        });
+
+        // Menú de tono (zanahoria)
+        function togglePitchMenu(forceState) {
+            pitchMenuOpen = typeof forceState === 'boolean' ? forceState : !pitchMenuOpen;
+            if (pitchMenuOpen) {
+                pitchMenu.classList.remove('closed');
+                pitchMenu.classList.add('open');
+                btnPitchToggle.classList.add('ring-2', 'ring-carrot-400/60');
+            } else {
+                pitchMenu.classList.remove('open');
+                pitchMenu.classList.add('closed');
+                btnPitchToggle.classList.remove('ring-2', 'ring-carrot-400/60');
+            }
+        }
+
+        btnPitchToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Cerrar menú del engranaje si está abierto
+            if (state.gearOpen) toggleGearMenu(false);
+            if (actionsMenuOpen) toggleActionsMenu(false);
+            if (audioMenuOpen) toggleAudioMenu(false);
+            if (voiceMenuOpen) toggleVoiceMenu(false);
+            togglePitchMenu();
+        });
+
+        pitchMenu.addEventListener('pointerdown', (e) => e.stopPropagation());
+
+        // Controles de tono de voz
+        pitchBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.audio.pitchRate = parseFloat(btn.dataset.pitch);
+                pitchBtns.forEach(b => {
+                    b.className = 'pitch-btn flex items-center gap-2 px-3 py-2 rounded-xl bg-transparent text-soil-300 hover:bg-soil-800 hover:text-white text-xs font-semibold transition whitespace-nowrap';
+                });
+                btn.className = 'pitch-btn flex items-center gap-2 px-3 py-2 rounded-xl bg-carrot-600 text-white text-xs font-bold transition whitespace-nowrap';
+                togglePitchMenu(false);
+            });
+        });
+
+        // Botones de acción en Modo Jugar
+        btnMic.addEventListener('click', toggleVoiceRecording);
+        document.getElementById('btn-act-pet').addEventListener('click', actionPet);
+        document.getElementById('btn-act-tickle').addEventListener('click', actionTickle);
+        document.getElementById('btn-act-feed').addEventListener('click', actionFeed);
+        document.getElementById('btn-act-poke').addEventListener('click', actionPoke);
+
+        // Arrancar aplicación al cargar la ventana
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            setMode('play');
+            setStatus('📁 Abre ⚙️ y sube una foto para empezar');
+            requestAnimationFrame(renderLoop);
+        });
+    </script>
+</body>
+</html>
